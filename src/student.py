@@ -21,18 +21,18 @@ class Student(Snake):
 
     def update(self, points=None, mapsize=None, count=None):
         if self.map is None:
-            self.map = Map(mapsize, self.maze)
+            self.map = Map(mapsize, self.maze, self.body)
         else:
-            self.map.update(mapsize, self.maze, self.body)
+            self.map.updateMapBody(mapsize, self.body)
 
     def updateDirection(self, maze):
         # this is the brain of the snake player
         olddir = self.direction
         position = self.body[0]
 
-        self.maze = maze
-
         if self.map is None:
+            self.maze = maze
+
             # new direction can't be up if current direction is down...and so on
             complement = [(up, down), (down, up), (right, left), (left, right)]
             invaliddir = [x for (x, y) in complement if y == olddir]  # o que nao pode acontecer
@@ -54,6 +54,8 @@ class Student(Snake):
             self.direction = olddir
             print(self.direction)
         else:
+            self.map.updateMaze(maze)
             way = Way(self.map)
             path = way.search_path(position, maze.foodpos)
-            self.direction = self.sub(path[1], position)
+            if path is not None:
+                self.direction = self.sub(path[1], position)

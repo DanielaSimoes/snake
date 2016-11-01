@@ -33,7 +33,7 @@ class Player:
         self.agent.points+=point
 
 class SnakeGame:
-    def __init__(self, hor=60, ver=40, tilesize=20, fps=50):
+    def __init__(self, hor=60, ver=40, tilesize=20, fps=100):
         #create the window and do other stuff
         pygame.init()
         self.tilesize=tilesize  #tile size, adjust according to screen size

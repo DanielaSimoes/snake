@@ -4,26 +4,27 @@ import scipy.spatial.distance as d
 from tree_search import *
 
 class Map:
-    def __init__(self, mapsize, maze):
-        self.connections = []
+    def __init__(self, mapsize, maze, body):
+        #self.connections = []
         self.coordinates = None
         self.mapsize = mapsize
         self.Xsize = mapsize[0]
         self.Ysize = mapsize[1]
         self.maze = maze
-        self.dist_to_walk = 1
+        self.body = body
         self.instance()
 
     def update(self, mapsize, maze, body):
-        #start guide: the old position of the player will be added and the new position will be deleted
-        #adversario maze.playerpos[0]
-        #our snake : body
-        print(self.connections)
-        #print(any([body[0] in self.connections[1]]))
-        if any([body in self.connections[1]]):
-            self.connections.remove(self, body)
-            print("PASEI")
+        self.mapsize = mapsize
+        self.maze = maze
+        self.body = body
 
+    def updateMaze(self, maze):
+        self.maze = maze
+
+    def updateMapBody(self, mapsize, body):
+        self.mapsize = mapsize
+        self.body = body
 
     def pathlen(self, a, b):
         return int(((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5)
@@ -33,24 +34,6 @@ class Map:
         Ypts = np.arange(self.Ysize)
         coords = np.array(list(itertools.product(Xpts, Ypts)))
         self.coordinates = d.cdist(coords, coords)
-
-        # adicionar as conexoes
-        for x,y in coords:
-            if (x,y) not in self.maze.obstacles:
-                options = [(x, y + self.dist_to_walk), (x, y - self.dist_to_walk), (x + self.dist_to_walk, y), (x - self.dist_to_walk, y)]
-
-                for i in options:
-                    if i not in self.maze.obstacles:
-                        if i[0]<0:  # if the map does not continue to the left, snake returns from the right side
-                            self.connections += [((x, y), (i[0] + self.Xsize, i[1]))]
-                        elif i[1] < 0:  # if the map does not continue to the top, snake returns from the bottom side
-                            self.connections += [((x, y), (i[0], i[1] + self.Ysize))]
-                        elif i[0] > self.Xsize: # if the map does not continue to the right, snake returns from the left side
-                            self.connections += [((x,y), (i[0]%self.mapsize[0], i[1]))]
-                        elif i[1] > self.Ysize: # if the map does not continue to the right, snake returns from the left side
-                            self.connections += [((x, y), (i[0], i[1] % self.mapsize[1]))]
-                        else:
-                            self.connections += [((x, y), i)]
 
 
 
@@ -70,19 +53,35 @@ class Way:
 class GridConnections(SearchDomain):
     def __init__(self, map):
         SearchDomain.__init__(self)
-        self.connections = map.connections
+        #self.connections = map.connections
         self.coordinates = map.coordinates
         self.map = map
         self.visited = []
+        self.dist_to_walk = 1
 
     def actions(self, cell):
         self.visited += [cell]
         actlist = []
-        for c1, c2 in self.connections:
-            if c1 == cell and c2 not in self.visited:
-                actlist += [(c1, c2)]
-            elif c2 == cell and c1 not in self.visited:
-                actlist += [(c2, c1)]
+
+        options = [(cell[0], cell[1] + self.dist_to_walk), (cell[0], cell[1] - self.dist_to_walk),
+                   (cell[0] + self.dist_to_walk, cell[1]), (cell[0] - self.dist_to_walk, cell[1])]
+
+        for i in options:
+            if i[0]<0:  # if the map does not continue to the left, snake returns from the right side
+                action = (i[0] + self.map.Xsize, i[1])
+            elif i[1] < 0:  # if the map does not continue to the top, snake returns from the bottom side
+                action = (i[0], i[1] + self.map.Ysize)
+            elif i[0] >= self.map.Xsize: # if the map does not continue to the right, snake returns from the left side
+                action = (i[0]%self.map.mapsize[0], i[1])
+            elif i[1] >= self.map.Ysize: # if the map does not continue to the right, snake returns from the left side
+                action = (i[0], i[1] % self.map.mapsize[1])
+            else:
+                action = i
+
+            if action not in self.map.maze.obstacles and action not in self.map.maze.playerpos and \
+                            action not in self.visited:
+                    actlist += [(cell, action)]
+
         return actlist
 
     def result(self, state, action):
