@@ -1,0 +1,69 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="http://cdn.datatables.net/1.10.12/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  </head>
+  <body>
+    <table id="example" class="table table-striped table-bordered" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th>Commit</th>
+                <th>Time (min)</th>
+                <th>Time (mean)</th>
+                <th>Time (max)</th>
+                <th>Winning %</th>
+                <th>Score (min)</th>
+                <th>Score (mean)</th>
+                <th>Score (max)</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <th>Commit</th>
+                <th>Time (min)</th>
+                <th>Time (mean)</th>
+                <th>Time (max)</th>
+                <th>Winning %</th>
+                <th>Score (min)</th>
+                <th>Score (mean)</th>
+                <th>Score (max)</th>
+            </tr>
+        </tfoot>
+        <tbody id="tbody_result">
+        </tbody>
+    </table>
+
+    <script type="text/javascript" language="javascript" src="http://code.jquery.com/jquery-1.12.3.js"></script>
+    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.12/js/dataTables.bootstrap.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        $.getJSON("/data.json", function(data){
+            var dataSet = [];
+
+            for (var i = 0; i < data.length; i++) {
+              dataSet.push([
+                "<a target=\"\blank\" href=\"https://github.com/DanielaSimoes/snake/commit/"+data[i]["commit"]+"\">"+data[i]["commit"]+"</a>",
+                data[i]["stats"]["time"]["min"],
+                data[i]["stats"]["time"]["mean"],
+                data[i]["stats"]["time"]["max"],
+                data[i]["stats"]["win"],
+                data[i]["stats"]["score"]["min"],
+                data[i]["stats"]["score"]["mean"],
+                data[i]["stats"]["score"]["max"]
+              ])
+            }
+
+            $('#example').DataTable({
+                data: dataSet,
+                stateSave: true
+            });
+        })
+        .error(function (jqXHR, textStatus, errorThrown) {
+          console.log(jqXHR, textStatus, errorThrown)
+        });
+    });
+    </script>
+  </body>
+</html>

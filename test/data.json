@@ -1,0 +1,25 @@
+[
+  {
+    "commit": "5853a61",
+    "stats": {
+      "time": {
+        "mean": 40,
+        "max": 60,
+        "min": 10
+      },
+      "score": {
+        "mean": 40,
+        "max": 60,
+        "min": 10
+      },
+      "win": 100
+    },
+    "entries": [
+      {
+        "time": 10,
+        "score": 10,
+        "win": true
+      }
+    ]
+   }
+]
