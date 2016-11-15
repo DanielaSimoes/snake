@@ -1,5 +1,5 @@
 from game import *
-from human import HumanSnake
+from student import Student
 from agent1 import Agent1
 import sys, getopt
 
@@ -23,9 +23,9 @@ def main(argv):
 
     snake=SnakeGame(hor=60, ver=40, fps=20, visual=visual)
     snake.setObstacles(15,inputfile) #level of obstacles
-    snake.setPlayers([  
+    snake.setPlayers([
         Agent1([snake.playerPos()]),
-        Agent1([snake.playerPos()]),
+        Student([snake.playerPos()]),
     ])
     snake.start()
 
