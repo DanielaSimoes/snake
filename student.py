@@ -61,7 +61,10 @@ class Student(Snake):
             if path is not None and len(path) >= 2:
                 self.direction = self.sub(path[1], position)
             else:
-                # print("penalização on going")
                 actions = way.prob.actions(position)
-                # print(actions)
+
+                if len(actions) == 0:
+                    # go die wherever you want anyway
+                    return
+
                 self.direction = self.sub(actions[0][1], position)

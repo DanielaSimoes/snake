@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-cd ..
 python3 test.py
 
 PROCESS=( `ps aux | grep "python -m SimpleHTTPServer 8000" | awk '/ /{print $1}' | wc -w` )
