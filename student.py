@@ -9,7 +9,6 @@ class Student(Snake):
         # criar um mapa
         self.map = None
         self.maze = None
-        self.last_path = None
         super().__init__(body, direction, name="DC")
 
     def pathlen(self, a, b):
@@ -22,7 +21,6 @@ class Student(Snake):
         return a[0] - b[0], a[1] - b[1]
 
     def update(self, points=None, mapsize=None, count=None,agent_time=None):
-        # não somos penalizados aqui, esta função não é chamada na parte da penalização
         if self.map is None:
             self.map = Map(mapsize, self.maze, self.body)
         else:
@@ -61,7 +59,9 @@ class Student(Snake):
             path = way.search_path(position, maze.foodpos)
 
             if path is not None and len(path) >= 2:
-                self.last_path = path
                 self.direction = self.sub(path[1], position)
             else:
-                self.direction = self.sub(self.last_path[1], position)
+                # print("penalização on going")
+                actions = way.prob.actions(position)
+                # print(actions)
+                self.direction = self.sub(actions[0][1], position)

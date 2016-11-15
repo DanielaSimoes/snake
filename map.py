@@ -36,7 +36,6 @@ class Map:
         self.coordinates = d.cdist(coords, coords)
 
 
-
 class Way:
     def __init__(self, map):
         self.map = map
@@ -49,51 +48,3 @@ class Way:
         self.calculated = tree.search()
         return self.calculated
 
-
-class GridConnections(SearchDomain):
-    def __init__(self, map):
-        SearchDomain.__init__(self)
-        #self.connections = map.connections
-        self.coordinates = map.coordinates
-        self.map = map
-        self.visited = []
-        self.dist_to_walk = 1
-
-    def actions(self, cell):
-        self.visited += [cell]
-        actlist = []
-
-        options = [(cell[0], cell[1] + self.dist_to_walk), (cell[0], cell[1] - self.dist_to_walk),
-                   (cell[0] + self.dist_to_walk, cell[1]), (cell[0] - self.dist_to_walk, cell[1])]
-
-        for i in options:
-            if i[0]<0:  # if the map does not continue to the left, snake returns from the right side
-                action = (i[0] + self.map.Xsize, i[1])
-            elif i[1] < 0:  # if the map does not continue to the top, snake returns from the bottom side
-                action = (i[0], i[1] + self.map.Ysize)
-            elif i[0] >= self.map.Xsize: # if the map does not continue to the right, snake returns from the left side
-                action = (i[0]%self.map.mapsize[0], i[1])
-            elif i[1] >= self.map.Ysize: # if the map does not continue to the right, snake returns from the left side
-                action = (i[0], i[1] % self.map.mapsize[1])
-            else:
-                action = i
-
-            if action not in self.map.maze.obstacles and action not in self.map.maze.playerpos and \
-                            action not in self.visited:
-                    actlist += [(cell, action)]
-
-        return actlist
-
-    def result(self, state, action):
-        c1, c2 = action
-        if c1 == state:
-            return c2
-
-    def cost(self, state, action):
-        return 0
-
-    def heuristic(self, state, goal_state):
-        return self.coordinates[self.to_index(state, self.map.mapsize[1]), self.to_index(goal_state, self.map.mapsize[1])]
-
-    def to_index(self, point, mapsize_y):
-        return point[0] * mapsize_y + point[1]
