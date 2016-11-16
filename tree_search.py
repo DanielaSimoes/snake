@@ -17,44 +17,21 @@ class GridConnections:
         options = [(cell[0], cell[1] + self.dist_to_walk), (cell[0], cell[1] - self.dist_to_walk),
                    (cell[0] + self.dist_to_walk, cell[1]), (cell[0] - self.dist_to_walk, cell[1])]
 
-        options1 = [(cell[0], cell[1] + self.dist_to_walk), (cell[0], cell[1] - self.dist_to_walk),
-                   (cell[0] + self.dist_to_walk, cell[1])]
+        for i in options:
+            if i[0] < 0:  # if the map does not continue to the left, snake returns from the right side
+                action = (i[0] + self.map.Xsize, i[1])
+            elif i[1] < 0:  # if the map does not continue to the top, snake returns from the bottom side
+                action = (i[0], i[1] + self.map.Ysize)
+            elif i[0] >= self.map.Xsize:  # if the map does not continue to the right, snake returns from the left side
+                action = (i[0] % self.map.mapsize[0], i[1])
+            elif i[1] >= self.map.Ysize:  # if the map does not continue to the right, snake returns from the left side
+                action = (i[0], i[1] % self.map.mapsize[1])
+            else:
+                action = i
 
-        if(len(self.map.body) == 1):
-            for i in options1:
-                if i[0] < 0:  # if the map does not continue to the left, snake returns from the right side
-                    action = (i[0] + self.map.Xsize, i[1])
-                elif i[1] < 0:  # if the map does not continue to the top, snake returns from the bottom side
-                    action = (i[0], i[1] + self.map.Ysize)
-                elif i[0] >= self.map.Xsize:  # if the map does not continue to the right, snake returns from the left side
-                    action = (i[0] % self.map.mapsize[0], i[1])
-                elif i[1] >= self.map.Ysize:  # if the map does not continue to the right, snake returns from the left side
-                    action = (i[0], i[1] % self.map.mapsize[1])
-                else:
-                    action = i
-
-                if action not in self.map.maze.obstacles and action not in self.map.maze.playerpos and \
+            if action not in self.map.maze.obstacles and action not in self.map.maze.playerpos and \
                             action not in self.visited:
-                    actlist +=[(cell, action)]
-
-        else:
-            for i in options:
-                if i[0] < 0:  # if the map does not continue to the left, snake returns from the right side
-                    action = (i[0] + self.map.Xsize, i[1])
-                elif i[1] < 0:  # if the map does not continue to the top, snake returns from the bottom side
-                    action = (i[0], i[1] + self.map.Ysize)
-                elif i[0] >= self.map.Xsize:  # if the map does not continue to the right, snake returns from the left side
-                    action = (i[0] % self.map.mapsize[0], i[1])
-                elif i[1] >= self.map.Ysize:  # if the map does not continue to the right, snake returns from the left side
-                    action = (i[0], i[1] % self.map.mapsize[1])
-                else:
-                    action = i
-
-                if action not in self.map.maze.obstacles and action not in self.map.maze.playerpos and \
-                            action not in self.visited:
-                    actlist += [(cell, action)]
-
-
+                actlist += [(cell, action)]
 
         return actlist
 
@@ -117,7 +94,7 @@ class SearchTree:
 
         while self.open_nodes != []:
             self.node = self.open_nodes[0]
-            self.open_nodes[0:1] = [],
+            self.open_nodes[0:1] = []
 
             if self.problem.goal_test(self.node.state):
                 self.result = self.get_path(self.node)
