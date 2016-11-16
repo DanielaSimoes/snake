@@ -1,4 +1,5 @@
 from math import *
+import signal
 
 
 class GridConnections:
@@ -69,6 +70,7 @@ class SearchNode:
         self.c = c
         self.h = h
         self.f = f
+        self.node = None
 
 
 class SearchTree:
@@ -87,37 +89,50 @@ class SearchTree:
         path += [node.state]
         return (path)
 
-    def search(self):
+    def search_helper(self):
         visited = []
 
-        max_iterations = 100
-        i = 0
-
         while self.open_nodes != []:
-            i += 1
-            node = self.open_nodes[0]
+            self.node = self.open_nodes[0]
             self.open_nodes[0:1] = []
-            if self.problem.goal_test(node.state):
-                self.result = self.get_path(node)
+
+            if self.problem.goal_test(self.node.state):
+                self.result = self.get_path(self.node)
+                signal.alarm(0)
                 return self.result
-            if node.state in visited:
+
+            if self.node.state in visited:
                 continue
-            visited += [node.state]
+            visited += [self.node.state]
             lnewnodes = []
-            for a in self.problem.domain.actions(node.state):
-                newstate = self.problem.domain.result(node.state, a)
-                if newstate not in self.get_path(node):
-                    cost = self.problem.domain.cost(node.state, a)
+            for a in self.problem.domain.actions(self.node.state):
+                newstate = self.problem.domain.result(self.node.state, a)
+                if newstate not in self.get_path(self.node):
+                    cost = self.problem.domain.cost(self.node.state, a)
                     heuristic = self.problem.domain.heuristic(newstate, self.problem.goal)
-                    lnewnodes += [SearchNode(newstate, node, node.c + cost, heuristic, \
-                                             node.c + cost + heuristic)]
+                    lnewnodes += [SearchNode(newstate, self.node, self.node.c + cost, heuristic, \
+                                             self.node.c + cost + heuristic)]
             self.add_to_open(lnewnodes)
 
-            if i > max_iterations:
-                self.result = self.get_path(node)
-                return self.result
-
+        signal.alarm(0)
         return []
+
+    def signal_handler(self, signum, frame):
+        raise Exception("Timed out!")
+
+    def search(self, agent_time):
+        signal.signal(signal.SIGALRM, self.signal_handler)
+        agent_time = (agent_time/1000)*(3/4)
+        self.result = None
+        signal.setitimer(signal.ITIMER_REAL, agent_time)
+
+        try:
+            return self.search_helper()
+        except Exception:
+            # print("SAFOU")
+            signal.alarm(0)
+            self.result = self.get_path(self.node)
+            return self.result
 
     def add_to_open(self, lnewnodes):
         self.open_nodes.extend(lnewnodes)

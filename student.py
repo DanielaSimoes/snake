@@ -9,6 +9,7 @@ class Student(Snake):
         # criar um mapa
         self.map = None
         self.maze = None
+        self.agent_time = None
         super().__init__(body, direction, name="DC")
 
     def pathlen(self, a, b):
@@ -21,6 +22,8 @@ class Student(Snake):
         return a[0] - b[0], a[1] - b[1]
 
     def update(self, points=None, mapsize=None, count=None,agent_time=None):
+        self.agent_time = agent_time
+
         if self.map is None:
             self.map = Map(mapsize, self.maze, self.body)
         else:
@@ -55,7 +58,7 @@ class Student(Snake):
             self.direction = olddir
         else:
             self.map.updateMaze(maze)
-            way = Way(self.map)
+            way = Way(self.map, self.agent_time)
             path = way.search_path(position, maze.foodpos)
 
             if path is not None and len(path) >= 2:

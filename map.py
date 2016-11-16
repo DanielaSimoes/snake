@@ -37,14 +37,15 @@ class Map:
 
 
 class Way:
-    def __init__(self, map):
+    def __init__(self, map, agent_time):
         self.map = map
         self.prob = GridConnections(map)
         self.calculated = None
+        self.agent_time = agent_time
 
     def search_path(self, from_point, to):
         prob = SearchProblem(self.prob, from_point, to)
         tree = SearchTree(prob)
-        self.calculated = tree.search()
+        self.calculated = tree.search(self.agent_time)
         return self.calculated
 

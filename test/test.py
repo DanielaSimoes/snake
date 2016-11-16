@@ -8,11 +8,11 @@ from functools import reduce
 agent_name = "DC"
 other_name = "Agent1"
 
-ITERATIONS = 1
+ITERATIONS = 100
 
 
 def get_git_commit_hash():
-    return subprocess.check_output(['git', 'describe', '--always'])
+    return str(subprocess.check_output(['git', 'describe', '--always'])).replace("\\n", "").replace("b'", "")
 
 
 def main():
@@ -33,10 +33,14 @@ def main():
             print(err)
             exit()
 
+        if "Player " + agent_name + " took" in str(err):
+            print(err)
+            exit()
+
         if agent_name + " is the Winner" in str(err):
             try:
                 score = int(str(err).split(" " + agent_name + "\\n")[-2].split(" ")[-1])
-            except IndexError:
+            except Exception:
                 score = 0
 
             entry = {
@@ -44,12 +48,10 @@ def main():
                 "win": True
             }
             entries.append(entry)
-
-            print(agent_name + " IS THE WINNER")
         elif other_name + " is the Winner" in str(err):
             try:
                 score = int(str(err).split("INFO:" + other_name + " ")[-1].split(" ")[0])
-            except IndexError:
+            except Exception:
                 score = 0
 
             entry = {
@@ -62,6 +64,7 @@ def main():
             print(str(err))
 
         i += 1
+        print(i)
 
     return entries
 
@@ -84,12 +87,12 @@ def store(entries):
     for row in data:
         if row["commit"] == commit:
             data.remove(row)
-            data.append({
-                "commit": commit,
-                "stats": stats
-                # "entries": entries
-            })
             break
+
+    data.append({
+        "commit": commit,
+        "stats": stats
+    })
 
     with open('data.json', 'w') as outfile:
         json.dump(data, outfile)
