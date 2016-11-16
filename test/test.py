@@ -3,6 +3,8 @@ import json
 import subprocess
 import os.path
 from functools import reduce
+import uuid
+from shutil import move
 
 
 agent_name = "DC"
@@ -15,12 +17,29 @@ def get_git_commit_hash():
     return str(subprocess.check_output(['git', 'describe', '--always'])).replace("\\n", "").replace("b'", "").replace("'", "")
 
 
+def clean():
+    subprocess.Popen(['rm', '-rf', get_git_commit_hash()],
+                     cwd=os.path.abspath(__file__ + "/../"))
+    subprocess.Popen(['mkdir', "-p", get_git_commit_hash() + "/traceback"],
+                     cwd=os.path.abspath(__file__ + "/../"))
+    subprocess.Popen(['mkdir', "-p", get_git_commit_hash() + "/took"],
+                     cwd=os.path.abspath(__file__ + "/../"))
+    subprocess.Popen(['mkdir', "-p", get_git_commit_hash() + "/lose"],
+                     cwd=os.path.abspath(__file__ + "/../"))
+    subprocess.Popen(['mkdir', "-p", get_git_commit_hash() + "/else"],
+                     cwd=os.path.abspath(__file__ + "/../"))
+    subprocess.Popen(['mkdir', "-p", get_git_commit_hash() + "/all_dead"],
+                     cwd=os.path.abspath(__file__ + "/../"))
+
+
 def exit_image(problem, err):
-    print(problem)
-    print(str(err))
-    process = subprocess.Popen(['open', 'debug.jpeg'],
-                               cwd=os.path.abspath(__file__ + "/../../"))
-    exit()
+    unique_id = str(uuid.uuid4())
+
+    move("../debug.jpeg", get_git_commit_hash() + "/" + problem + "/" + unique_id + ".jpeg")
+
+    text_file = open(get_git_commit_hash() + "/" + problem + "/" + unique_id + ".txt", "w")
+    text_file.write(str(err))
+    text_file.close()
 
 
 def main():
@@ -35,15 +54,15 @@ def main():
         out, err = process.communicate()
 
         if "All dead" in str(err):
-            continue
+            exit_image("all_dead", err)
 
-        if "Traceback" in str(err):
-            exit_image("Traceback", err)
+        elif "Traceback" in str(err):
+            exit_image("traceback", err)
 
-        if agent_name + "> took" in str(err):
-            exit_image("TOOK", err)
+        elif agent_name + "> took" in str(err):
+            exit_image("took", err)
 
-        if agent_name + " is the Winner" in str(err):
+        elif agent_name + " is the Winner" in str(err):
             try:
                 score = int(str(err).split(" " + agent_name + "\\n")[-2].split(" ")[-1])
             except Exception:
@@ -70,7 +89,7 @@ def main():
             entries.append(entry)
 
             # debug only! remove to test
-            exit_image(other_name + " won!!", err)
+            exit_image("lose", err)
         else:
             exit_image("else", err)
 
@@ -110,5 +129,6 @@ def store(entries):
 
 
 if __name__ == '__main__':
+    clean()
     entries = main()
     store(entries)

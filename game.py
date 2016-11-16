@@ -104,9 +104,9 @@ class SnakeGame:
         players = [PlayerStat(p.name, p.color, p.points) for p in self.players + self.dead]
       
         score = "{} vs {}".format(players[0].points, players[1].points)
-        if self.screen == None and self.count % self.fps == 0:
-            logging.info("{} {} {}".format(players[0].name, score, players[1].name))
-        elif self.screen != None:
+        logging.info("{} {} {}".format(players[0].name, score, players[1].name))
+
+        if self.screen is not None:
             text = self.font.render(score, 1,(255,255,255))
             textpos = text.get_rect(centerx=self.screen.get_width()/2,y=(self.verttiles)*self.tilesize)
 

@@ -117,7 +117,7 @@ class SearchTree:
 
         while self.open_nodes != []:
             self.node = self.open_nodes[0]
-            self.open_nodes[0:1] = []
+            self.open_nodes[0:1] = [],
 
             if self.problem.goal_test(self.node.state):
                 self.result = self.get_path(self.node)
@@ -150,7 +150,9 @@ class SearchTree:
         signal.setitimer(signal.ITIMER_REAL, agent_time)
 
         try:
-            return self.search_helper()
+            result = self.search_helper()
+            signal.alarm(0)
+            return result
         except Exception:
             # print("SAFOU")
             signal.alarm(0)
