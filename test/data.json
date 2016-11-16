@@ -1,1 +1,1 @@
-[{"commit": "5853a61", "entries": [{"score": 10, "win": true}], "stats": {"score": {"min": 10, "max": 60, "mean": 40}, "win": 100}}]
+[{"commit": "c1f4581'", "stats": {"score": {"mean": 84.0, "max": 200, "min": 0}, "win": 100.0}}, {"commit": "ab50fd3'", "stats": {"score": {"mean": 47.0, "max": 160, "min": -130}, "win": 86.0}}, {"commit": "ab50fd3", "stats": {"win": 83.0, "score": {"mean": 49.6, "max": 310, "min": 0}}}]

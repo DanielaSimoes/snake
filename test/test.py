@@ -12,7 +12,15 @@ ITERATIONS = 100
 
 
 def get_git_commit_hash():
-    return str(subprocess.check_output(['git', 'describe', '--always'])).replace("\\n", "").replace("b'", "")
+    return str(subprocess.check_output(['git', 'describe', '--always'])).replace("\\n", "").replace("b'", "").replace("'", "")
+
+
+def exit_image(problem, err):
+    print(problem)
+    print(str(err))
+    process = subprocess.Popen(['open', 'debug.jpeg'],
+                               cwd=os.path.abspath(__file__ + "/../../"))
+    exit()
 
 
 def main():
@@ -20,7 +28,7 @@ def main():
     i = 0
 
     while i < ITERATIONS:
-        process = subprocess.Popen(['python3', 'start.py', '--disable-video'],
+        process = subprocess.Popen(['python3', 'start.py'],
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    cwd=os.path.abspath(__file__ + "/../../"))
@@ -30,18 +38,19 @@ def main():
             continue
 
         if "Traceback" in str(err):
-            print(err)
-            exit()
+            exit_image("Traceback", err)
 
-        if "Player " + agent_name + " took" in str(err):
-            print(err)
-            exit()
+        if agent_name + "> took" in str(err):
+            exit_image("TOOK", err)
 
         if agent_name + " is the Winner" in str(err):
             try:
                 score = int(str(err).split(" " + agent_name + "\\n")[-2].split(" ")[-1])
             except Exception:
-                score = 0
+                try:
+                    score = int(str(err).split("INFO:Player <" + agent_name + "> points: ")[-1])
+                except Exception:
+                    score = 0  # error of parsing
 
             entry = {
                 "score": score,
@@ -59,9 +68,11 @@ def main():
                 "win": False
             }
             entries.append(entry)
+
+            # debug only! remove to test
+            exit_image(other_name + " won!!", err)
         else:
-            exit()
-            print(str(err))
+            exit_image("else", err)
 
         i += 1
         print(i)

@@ -125,15 +125,15 @@ class SnakeGame:
         if len([p for p in self.players if not p.IsDead]) == 1:
             w = [p for p in self.players if not p.IsDead][0]
             winner = "{} is the Winner!".format(w.name)
-            if self.screen == None:
-                logging.info(winner)
-            else:
+            logging.info(winner)
+
+            if self.screen is not None:
                 text=self.font.render(winner,1,w.color)
         elif len([p for p in self.players if not p.IsDead]) == 0:
             dead = "All dead..."
-            if self.screen == None:
-                logging.info(dead)
-            else:
+            logging.info(dead)
+
+            if self.screen is not None:
                 text=self.font.render(dead,1,(255,0,0))
         if text != None and self.screen != None:
             textpos = text.get_rect(centerx=self.screen.get_width()/2,centery=self.screen.get_height()/2)
@@ -185,7 +185,7 @@ class SnakeGame:
         clock = pygame.time.Clock()
         self.count=0
         while len([p for p in self.players if not p.IsDead]) > 1:
-            clock.tick(self.fps)
+            #clock.tick(self.fps)
             if self.screen != None:
                 for event in pygame.event.get():
                     if event.type == QUIT or (event.type == pygame.KEYDOWN and event.key == K_q): #close window or press Q
@@ -237,8 +237,11 @@ class SnakeGame:
             if self.screen != None:
                 pygame.display.update()
 
-
         while self.screen != None:
+            pygame.image.save(self.screen, "debug.jpeg")
+            pygame.quit();
+            exit()
+
             event = pygame.event.wait()
             if event.type == QUIT or event.type == pygame.KEYDOWN and event.key == K_q: #close window or press Q
                 pygame.quit(); 
