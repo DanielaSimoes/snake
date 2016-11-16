@@ -239,8 +239,8 @@ class SnakeGame:
 
         while self.screen != None:
             pygame.image.save(self.screen, "debug.jpeg")
-            pygame.quit();
-            exit()
+            # pygame.quit();
+            # exit()
 
             event = pygame.event.wait()
             if event.type == QUIT or event.type == pygame.KEYDOWN and event.key == K_q: #close window or press Q

@@ -3,12 +3,12 @@ import signal
 
 
 class GridConnections:
-    def __init__(self, map):
+    def __init__(self, map, dist_to_walk):
         # self.connections = map.connections
         self.coordinates = map.coordinates
         self.map = map
         self.visited = []
-        self.dist_to_walk = 1
+        self.dist_to_walk = dist_to_walk
 
     def actions(self, cell):
         self.visited += [cell]

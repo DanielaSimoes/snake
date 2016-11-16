@@ -37,9 +37,9 @@ class Map:
 
 
 class Way:
-    def __init__(self, map, agent_time):
+    def __init__(self, map, agent_time, dist_to_walk):
         self.map = map
-        self.prob = GridConnections(map)
+        self.prob = GridConnections(map , dist_to_walk)
         self.calculated = None
         self.agent_time = agent_time
 
