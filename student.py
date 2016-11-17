@@ -34,6 +34,30 @@ class Student(Snake):
 
         if path is not None and len(path) > 2:
             self.direction = self.sub(path[1], position)
+
+        if self.map is None:
+            self.maze = maze
+
+            # new direction can't be up if current direction is down...and so on
+            complement = [(up, down), (down, up), (right, left), (left, right)]
+            invaliddir = [x for (x, y) in complement if y == olddir]  # o que nao pode acontecer
+            validdir = [dir for dir in directions if not (dir in invaliddir)]
+
+            # get the list of valid directions for us - isto e, se nao for uma posicao valida entao e um obstaculo ou outro jogador
+            validdir = [dir for dir in validdir if
+                        not (self.add(position, dir) in maze.obstacles or self.add(position, dir) in maze.playerpos)]
+            # if we collide then set olddir to first move of validdir (if validdir is empty then leave it to olddir)
+            olddir = olddir if olddir in validdir or len(validdir) == 0 else validdir[0]
+            # shortest path.....we assume that the direction we are currently going now gives the shortest path
+            shortest = self.pathlen(self.add(position, olddir), maze.foodpos)  # length in shortest path
+            for dir in validdir:
+                newpos = self.add(position, dir)
+                newlen = self.pathlen(newpos, maze.foodpos)  # length in shortest path
+                if newlen < shortest:
+                    olddir = dir
+                    shortest = newlen
+            self.direction = olddir
+
         else:
             actions = way.prob.actions(position)
             if len(actions) == 0:
@@ -44,6 +68,33 @@ class Student(Snake):
                                      (maze.foodpos[0] - self.dist_to_walk, maze.foodpos[1]),
                                      (maze.foodpos[0], maze.foodpos[1] + self.dist_to_walk),
                                      (maze.foodpos[0], maze.foodpos[1] - self.dist_to_walk)]
+
+            if path is not None and len(path) >= 2:
+                self.direction = self.sub(path[1], position)
+
+                if (len(self.body)== 1 and self.direction == (-1,0)):
+                    actions1 = way.prob.actions(position)
+                    actions = actions1[1:]
+                    self.direction = self.sub(actions[0][1], position)
+
+                elif (len(self.body)== 1 and self.direction == (1,0)):
+                    actions1 = way.prob.actions(position)
+                    actions = [actions1[0]] + actions1[2:]
+                    self.direction = self.sub(actions[0][1], position)
+
+                elif (len(self.body)== 1 and self.direction == (0,1)):
+                    actions1 = way.prob.actions(position)
+                    actions = [actions1[0]] + [actions1[1]] + actions1[3:]
+                    self.direction = self.sub(actions[0][1], position)
+
+                elif (len(self.body)== 1 and self.direction == (0,-1)):
+                    actions1 = way.prob.actions(position)
+                    actions = [actions1[0]] + [actions1[1]] + actions1[3:]
+                    self.direction = self.sub(actions[0][1], position)
+
+            else:
+                actions = way.prob.actions(position)
+
 
             other_player = [item for item in maze.playerpos if item not in self.body]
 
@@ -67,3 +118,7 @@ class Student(Snake):
                 print(self.name + ": NO PATH")
                 print("########")
                 self.direction = self.sub(actions[0][1], position)
+
+                self.direction = self.sub(actions[0][1], position)
+
+
