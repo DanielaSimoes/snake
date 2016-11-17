@@ -1,4 +1,3 @@
-from math import *
 import signal
 import numpy as np
 import itertools
@@ -9,60 +8,53 @@ def add(a, b):
     return a[0] + b[0], a[1] + b[1]
 
 
-def sub( a, b):
+def sub(a, b):
     return a[0] - b[0], a[1] - b[1]
 
 
 class Map:
-    def __init__(self, mapsize, maze, body):
-        #self.connections = []
+    def __init__(self, map_size, body):
         self.coordinates = None
-        self.mapsize = mapsize
-        self.Xsize = mapsize[0]
-        self.Ysize = mapsize[1]
-        self.maze = maze
-        self.body = body
-        self.instance()
+        self.x_size = map_size[0]
+        self.y_size = map_size[1]
+        self.maze = None
+        self.body = None
         self.other_player = []
         self.together = False
 
-    def update(self, mapsize, maze, body):
-        self.mapsize = mapsize
-        self.maze = maze
-        self.body = body
-        self.other_player = [item for item in maze.playerpos if item not in self.body]
+        self.update(body=body)
+        self.instance()
 
-        result = sub(body[0], self.other_player[0])
-        result = (abs(result[0]), abs(result[1]))
-        self.together = (result[0] == 1 or result[1] == 1)
+    def update(self, body=None, maze=None):
+        if maze is not None:
+            self.maze = maze
 
-    def updateMaze(self, maze):
-        self.maze = maze
+        if body is not None:
+            self.body = body  # our agent body
+            # since the maze is updated in the second call in the updateDirection
+            # we don't have to verify if the maze is None
+            if self.maze is not None:
+                self.other_player = [item for item in self.maze.playerpos if item not in self.body]
 
-    def updateMapBody(self, mapsize, body):
-        self.mapsize = mapsize
-        self.body = body
-
-    def pathlen(self, a, b):
-        return int(((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5)
+                # some logic to see if the other agent is around us (beta)
+                result = sub(body[0], self.other_player[0])
+                result = (abs(result[0]), abs(result[1]))
+                self.together = (result[0] == 1 or result[1] == 1)
 
     def instance(self):
-        Xpts = np.arange(self.Xsize)
-        Ypts = np.arange(self.Ysize)
-        coords = np.array(list(itertools.product(Xpts, Ypts)))
-        self.coordinates = d.cdist(coords, coords)
+        cords = np.array(list(itertools.product(np.arange(self.x_size), np.arange(self.y_size))))
+        self.coordinates = d.cdist(cords, cords)
 
 
 class Way:
-    def __init__(self, map, agent_time, dist_to_walk,):
-        self.map = map
-        self.prob = GridConnections(map , dist_to_walk)
+    def __init__(self, current_map, agent_time, dist_to_walk,):
+        self.current_map = current_map
+        self.problem = GridConnections(current_map, dist_to_walk)
         self.calculated = None
         self.agent_time = agent_time
 
     def search_path(self, from_point, to):
-        prob = SearchProblem(self.prob, from_point, to)
-        tree = SearchTree(prob)
+        tree = SearchTree(SearchProblem(self.problem, from_point, to))
         self.calculated = tree.search(self.agent_time)
         return self.calculated
 
@@ -82,7 +74,7 @@ class GridConnections:
         else:
             self.other_player = []
 
-    def actions(self, cell):
+    def actions(self, cell, visited_condition=True):
         self.visited += [cell]
         actlist = []
 
@@ -91,18 +83,21 @@ class GridConnections:
 
         for i in options:
             if i[0] < 0:  # if the map does not continue to the left, snake returns from the right side
-                action = (i[0] + self.map.Xsize, i[1])
+                action = (i[0] + self.map.x_size, i[1])
             elif i[1] < 0:  # if the map does not continue to the top, snake returns from the bottom side
-                action = (i[0], i[1] + self.map.Ysize)
-            elif i[0] >= self.map.Xsize:  # if the map does not continue to the right, snake returns from the left side
-                action = (i[0] % self.map.mapsize[0], i[1])
-            elif i[1] >= self.map.Ysize:  # if the map does not continue to the right, snake returns from the left side
-                action = (i[0], i[1] % self.map.mapsize[1])
+                action = (i[0], i[1] + self.map.y_size)
+            elif i[0] >= self.map.x_size:  # if the map does not continue to the right, snake returns from the left side
+                action = (i[0] % self.map.x_size, i[1])
+            elif i[1] >= self.map.y_size:  # if the map does not continue to the right, snake returns from the left side
+                action = (i[0], i[1] % self.map.y_size)
             else:
                 action = i
 
-            if action not in self.map.maze.obstacles and action not in self.map.maze.playerpos and \
-                            action not in self.visited and action not in self.other_player:
+            if visited_condition and action not in self.map.maze.obstacles and action not in self.map.maze.playerpos \
+                    and action not in self.visited and action not in self.other_player:
+                actlist += [(cell, action)]
+            elif not visited_condition and action not in self.map.maze.obstacles \
+                    and action not in self.map.maze.playerpos and action not in self.other_player:
                 actlist += [(cell, action)]
 
         return actlist
@@ -119,7 +114,7 @@ class GridConnections:
 
     def heuristic(self, state, goal_state):
         return self.coordinates[
-            self.to_index(state, self.map.mapsize[1]), self.to_index(goal_state, self.map.mapsize[1])]
+            self.to_index(state, self.map.y_size), self.to_index(goal_state, self.map.y_size)]
 
     def to_index(self, point, mapsize_y):
         return point[0] * mapsize_y + point[1]
