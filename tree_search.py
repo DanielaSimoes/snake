@@ -104,9 +104,6 @@ class GridConnections:
             if action not in self.map.maze.obstacles and action not in self.map.maze.playerpos and \
                             action not in self.visited and action not in self.other_player:
                 actlist += [(cell, action)]
-                        action not in self.visited:
-                actlist += [(cell, action)]
-
 
         return actlist
 
