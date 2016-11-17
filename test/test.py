@@ -34,8 +34,10 @@ def clean():
 
 def exit_image(problem, err):
     unique_id = str(uuid.uuid4())
-
-    move("../debug.jpeg", get_git_commit_hash() + "/" + problem + "/" + unique_id + ".jpeg")
+    try:
+        move("../debug.jpeg", get_git_commit_hash() + "/" + problem + "/" + unique_id + ".jpeg")
+    except FileNotFoundError:
+        print("FileNotFoundError" + unique_id)
 
     text_file = open(get_git_commit_hash() + "/" + problem + "/" + unique_id + ".txt", "w")
     text_file.write(str(err))

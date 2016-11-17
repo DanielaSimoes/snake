@@ -1,23 +1,17 @@
 from snake import Snake
 from constants import *
-from map import Map, Way
+from tree_search import Map, Way
 
 
 class Student(Snake):
-    def __init__(self, body=[(0, 0)], direction=(1, 0)):
+    def __init__(self, body=[(0, 0)], direction=(1, 0), name="DC"):
         # criar um mapa
         self.map = None
         self.maze = None
         self.agent_time = None
         self.dist_to_walk = 1
         self.game_points = (0,0)
-        super().__init__(body, direction, name="DC")
-
-    def pathlen(self, a, b):
-        return int(((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5)
-
-    def add(self, a, b):
-        return a[0] + b[0], a[1] + b[1]
+        super().__init__(body, direction, name=name)
 
     def sub(self, a, b):
         return a[0] - b[0], a[1] - b[1]
@@ -57,7 +51,10 @@ class Student(Snake):
                 if self.game_points[1] < self.game_points[0]:
 
                     # run away, quit on food, else, I'll loose
-                    actions_to_run = actions - (position, maze.foodpos)
+                    try:
+                        actions_to_run = actions.remove((position, maze.foodpos))
+                    except ValueError:
+                        actions_to_run = actions
 
                     if len(actions_to_run) != 0:
                         self.direction = self.sub(actions_to_run[0][1], position)
@@ -66,4 +63,7 @@ class Student(Snake):
             if len(path) == 2:
                 self.direction = self.sub(path[1], position)
             else:
+                print("########")
+                print(self.name + ": NO PATH")
+                print("########")
                 self.direction = self.sub(actions[0][1], position)
