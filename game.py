@@ -32,11 +32,17 @@ class Player:
         logging.info("Player <{}> points: {}".format(self.name, self.points))
 
 class SnakeGame:
-    def __init__(self, hor=60, ver=40, tilesize=20, fps=50, visual=False):
+    def __init__(self, hor=60, ver=40, tilesize=20, fps=50, visual=False, obstacles=15, mapa=None):
         self.tilesize=tilesize  #tile size, adjust according to screen size
         self.hortiles=hor   #number of horizontal tiles
         self.verttiles=ver  #number of vertical tiles
-        
+       
+        if mapa != None:
+            image = pygame.image.load(mapa)
+            pxarray = pygame.PixelArray(image)
+            self.hortiles=len(pxarray)
+            self.verttiles=len(pxarray[0])
+
         if visual: 
             #create the window and do other stuff
             pygame.init()
@@ -53,6 +59,7 @@ class SnakeGame:
         self.obstacles=[]
         self.foodpos=(0,0)
         self.fps=fps #frames per second. The higher, the harder
+        self.setObstacles(obstacles, mapa)
 
     def generateFood(self):
         if self.foodpos == (0,0):
@@ -155,6 +162,10 @@ class SnakeGame:
     def update(self,snake):
         #updates the snake...
         head=snake.body[0]#head of snake
+        if abs(snake.agent.direction[0]) > 1 or abs(snake.agent.direction[1] > 1):
+            logging.error("{} tried to teleport -> DEAD".format(snake.agent.name))
+            self.gameKill(snake)
+            return
         head=(head[0]+snake.agent.direction[0],head[1]+snake.agent.direction[1])
         #wrap the snake around the window
         headx=self.hortiles-1 if head[0]<0 else 0 if head[0]>=self.hortiles else head[0]
@@ -201,12 +212,19 @@ class SnakeGame:
             self.count+=1
             #game logic is updated in the code below
             self.updatePlayerInfo()
+            
+            #food
             self.generateFood() #generate food if necessary
+            run = [-1,1,0]
+            neighbours = [((self.foodpos[0] + x)%self.hortiles, (self.foodpos[1] + y)%self.verttiles) for x in run for y in run]
+            valid_neighbours = [n for n in neighbours if not n in self.obstacles and not n in self.playerpos] 
+            self.foodpos = random.choice(valid_neighbours)
+
             for player in [a for a in self.players if not a.IsDead]:
                 s = pygame.time.get_ticks()
                 maze = Maze(self.obstacles, self.playerpos, self.foodpos)   #just a copy of our information (avoid shameful agents that tinker with the game server)
                 player.agent.updateDirection(maze) #update game logic (only for alive players)
-                f = pygame.time.get_ticks()
+                f = pygame.time.get_ticks() - 200 #200ms bonus for network communications
                 
                 if f-s > 1000*(1/self.fps)/2:
                     logging.debug("Player <{}> took {}".format(player.name, f-s))
@@ -214,13 +232,6 @@ class SnakeGame:
             for player in self.players:
                 self.update(player)
         
-            #move food
-            run = [-1,1,0]
-            neighbours = [((self.foodpos[0] + x)%self.hortiles, (self.foodpos[1] + y)%self.verttiles) for x in run for y in run]
-            valid_neighbours = [n for n in neighbours if not n in self.obstacles and not n in self.playerpos] 
-            self.foodpos = random.choice(valid_neighbours)
-
-            
             #print all the content in the screen
             if self.screen != None:
                 for player in self.players: #print players
@@ -243,6 +254,6 @@ class SnakeGame:
             #exit()
 
             event = pygame.event.wait()
-            if event.type == QUIT or event.type == pygame.KEYDOWN and event.key == K_q: #close window or press Q
+            if event.type == QUIT or (event.type == pygame.KEYDOWN and event.key == K_q): #close window or press Q
                 pygame.quit(); 
                 exit()
