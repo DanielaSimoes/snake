@@ -70,17 +70,19 @@ class Student(Snake):
             """
             self.direction = sub(path[1], head_position)
         else:
+            pass
+            """
             actions = way.problem.actions(head_position)
             if len(actions) == 0:
                 # go die wherever you want anyway
                 return
 
-            """
             ###### BETA LOGIC ######
 
             If the other player is close to the food we must avoid the food.
 
             ###### BETA LOGIC ######
+            """
             """
             positions_around_food = [(maze.foodpos[0] + self.dist_to_walk, maze.foodpos[1]),
                                      (maze.foodpos[0] - self.dist_to_walk, maze.foodpos[1]),
@@ -103,7 +105,6 @@ class Student(Snake):
                     if len(actions_to_run) != 0:
                         self.direction = sub(actions_to_run[0][1], head_position)
                         return
-
             if len(path) == 2:
                 self.direction = sub(path[1], head_position)
             else:
@@ -111,3 +112,5 @@ class Student(Snake):
                 print(self.name + ": NO PATH" + str(path))
                 print("########")
                 self.direction = sub(actions[0][1], head_position)
+
+            """
