@@ -1,6 +1,7 @@
 from game import *
 from human import HumanSnake
 from agent1 import Agent1
+from student import Student
 from maze import Maze
 import importlib
 import asyncio
@@ -17,11 +18,11 @@ def main(argv):
     network = False
     url = 'ws://localhost:8765' 
     url = None
-    StudentAgent = Agent1
-    studentAgent_name = "Agent1"
+    StudentAgent = Student
+    studentAgent_name = "DC"
     student_url = None
-    OponentAgent = Agent1
-    sponentAgent_name = "Agent1"
+    OponentAgent = Student
+    oponentAgent_name = "Mirror"
     oponent_url = None
     try:
         opts, args = getopt.getopt(argv,"hm:s:o:p",["help","map=","disable-video","student-agent=","oponent-agent=","proxy"])

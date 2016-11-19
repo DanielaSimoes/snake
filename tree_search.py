@@ -13,17 +13,16 @@ def sub(a, b):
 
 
 class Map:
-    def __init__(self, map_size, body):
+    def __init__(self, map_size):
         self.obstacles = None
         self.distance = None
         self.x_size = map_size[0]
         self.y_size = map_size[1]
         self.maze = None
 
-        self.update(body=body)
         self.instance()
 
-    def update(self, body=None, maze=None):
+    def update(self, maze=None):
         if maze is not None:
             self.maze = maze
 
@@ -143,7 +142,7 @@ class SearchTree:
 
     def search(self, agent_time):
         signal.signal(signal.SIGALRM, self.signal_handler)
-        agent_time = (agent_time/1000)*(3/4)
+        agent_time = (agent_time/1000)*(3/5)
         self.result = None
         signal.setitimer(signal.ITIMER_REAL, agent_time)
 

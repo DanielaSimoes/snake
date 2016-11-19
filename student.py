@@ -31,47 +31,43 @@ class Student(Snake):
         self.winning_points = points[1][1] < points[0][1] if points[0][0] == self.name else points[0][1] < points[1][1]
 
         if self.map is None:
-            self.map = Map(map_size=mapsize, body=self.body)
-        else:
-            self.map.update(body=self.body)
+            self.map = Map(map_size=mapsize)
 
     def updateDirection(self, maze):
         head_position = self.body[0]
 
+        other_head_position = maze.playerpos[0] if head_position != maze.playerpos[0] \
+            else maze.playerpos[len(self.body)]
+
+        # usar matrix
+        maze.obstacles += [(other_head_position[0], other_head_position[1]+1),
+                           (other_head_position[0], other_head_position[1]-1),
+                           (other_head_position[0]+1, other_head_position[1]),
+                           (other_head_position[0]-1, other_head_position[1])]
         self.map.update(maze=maze)
         way = Way(self.map, self.agent_time, self.dist_to_walk)
         path = way.search_path(head_position, maze.foodpos)
 
         """
-        We have the path to the food in the var path.
+        The path is not none, we have path and the path as length > 2,
+        the path is a list of cells, which cell is a tuple of X, Y.
+        The first entry of the path is the head position, the last is the
+        food pos if the path to the food take the normal time to be calculated.
         """
-
-        if len(self.body) == 1 and path is not None and len(path) >= 2:
-            """
-            Our agent is one size body, we must avoid to go back must we want to go to the food.
-            :var self.direction: we have the direction to the food, that the best direction and we will try
-            to keep that direction.
-            """
-            self.direction = sub(path[1], head_position)
-
-            if add(self.direction, self.old_direction) == (0, 0):
-                print("########")
-                print("backward", self.direction, self.old_direction)
-                print("########")
-
-            # we must store the old direction to make the new condition
+        if len(path) > 1:
             self.old_direction = self.direction
-        elif path is not None and len(path) > 2:
-            """
-            The path is not none, we have path and the path as length > 2,
-            the path is a list of cells, which cell is a tuple of X, Y.
-            The first entry of the path is the head position, the last is the
-            food pos if the path to the food take the normal time to be calculated.
-            """
             self.direction = sub(path[1], head_position)
         else:
-            pass
-            """
+            way.problem.visited = []
+            actions = way.problem.actions(head_position)
+
+            if len(actions) > 0:
+                self.direction = sub(way.problem.actions(head_position)[0], head_position)
+            else:
+                print(self.name, "no path")
+            # print(path[1], head_position, self.direction)
+            # print(self.name, self.direction, self.old_direction, len(path))
+"""
             actions = way.problem.actions(head_position)
             if len(actions) == 0:
                 # go die wherever you want anyway
@@ -82,8 +78,6 @@ class Student(Snake):
             If the other player is close to the food we must avoid the food.
 
             ###### BETA LOGIC ######
-            """
-            """
             positions_around_food = [(maze.foodpos[0] + self.dist_to_walk, maze.foodpos[1]),
                                      (maze.foodpos[0] - self.dist_to_walk, maze.foodpos[1]),
                                      (maze.foodpos[0], maze.foodpos[1] + self.dist_to_walk),
@@ -112,5 +106,4 @@ class Student(Snake):
                 print(self.name + ": NO PATH" + str(path))
                 print("########")
                 self.direction = sub(actions[0][1], head_position)
-
-            """
+"""
