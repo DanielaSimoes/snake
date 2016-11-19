@@ -64,7 +64,7 @@ def main(argv):
         print("Connecting to {}".format(url))
         asyncio.get_event_loop().run_until_complete(proxy(student_url,StudentAgent, studentAgent_name))
     else:
-        snake=SnakeGame(hor=60, ver=40, fps=20, visual=visual, obstacles=15, mapa=inputfile)
+        snake=SnakeGame(hor=60, ver=40, fps=100, visual=visual, obstacles=15, mapa=inputfile)
         snake.setPlayers([  
             StudentAgent([snake.playerPos()], name=studentAgent_name) if student_url == None else StudentAgent([snake.playerPos()], name=student_name, url=student_url),
             OponentAgent([snake.playerPos()], name=oponentAgent_name) if oponent_url == None else OponentAgent([snake.playerPos()], name=oponentAgent_name, url=oponent_url),

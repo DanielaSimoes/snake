@@ -66,7 +66,12 @@ class Student(Snake):
             else:
                 print(self.name, "no path")
             # print(path[1], head_position, self.direction)
-            # print(self.name, self.direction, self.old_direction, len(path))
+
+        if self.direction[0] > 1 or self.direction[0] < -1:
+            self.direction = -int(self.map.x_size*1.0 / self.direction[0]), self.direction[1]
+        if self.direction[1] > 1 or self.direction[1] < -1:
+            self.direction = self.direction[0], -int(self.map.y_size*1.0 / (self.direction[1]))
+
 """
             actions = way.problem.actions(head_position)
             if len(actions) == 0:

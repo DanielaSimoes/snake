@@ -18,6 +18,8 @@ class Map:
         self.distance = None
         self.x_size = map_size[0]
         self.y_size = map_size[1]
+        self.x_limit = map_size[0]-1
+        self.y_limit = map_size[1]-1
         self.maze = None
 
         self.instance()
@@ -33,7 +35,6 @@ class Map:
         cords = list(itertools.product(np.arange(self.x_size), np.arange(self.y_size)))
         cords = np.array(cords)
         self.distance = d.cdist(cords, cords)
-
 
 class Way:
     def __init__(self, current_map, agent_time, dist_to_walk,):
@@ -62,18 +63,54 @@ class GridConnections:
         options = [(cell[0], cell[1] + self.dist_to_walk), (cell[0], cell[1] - self.dist_to_walk),
                    (cell[0] + self.dist_to_walk, cell[1]), (cell[0] - self.dist_to_walk, cell[1])]
 
-        for action in options:
+        for i in options:
+            if i[0] < 0:  # if the map does not continue to the left, snake returns from the right side
+                action = (i[0] + self.map.x_size, i[1])
+            elif i[1] < 0:  # if the map does not continue to the top, snake returns from the bottom side
+                action = (i[0], i[1] + self.map.y_size)
+            elif i[0] >= self.map.x_size:  # if the map does not continue to the right, snake returns from the left side
+                action = (i[0] % self.map.x_size, i[1])
+            elif i[1] >= self.map.y_size:  # if the map does not continue to the right, snake returns from the left side
+                action = (i[0], i[1] % self.map.y_size)
+            else:
+                action = i
+
             if action not in self.visited and self.cell_valid(action):
                 actlist += [action]
 
         return actlist
 
     def heuristic(self, state, goal_state):
-        return self.map.distance[
-            self.to_index(state, self.map.y_size), self.to_index(goal_state, self.map.y_size)]
+        goal_state_index = self.to_index(goal_state)
+        state_index = self.to_index(state)
 
-    def to_index(self, point, mapsize_y):
-        return point[0] * mapsize_y + point[1]
+        real_distance = self.map.distance[state_index,
+                                          goal_state_index]
+
+        go_top_distance = self.map.distance[state_index,
+                                            self.to_index((state[0], self.map.y_limit))]
+        go_top_distance += self.map.distance[self.to_index((state[0], 0)),
+                                             goal_state_index]
+
+        go_bottom_distance = self.map.distance[state_index,
+                                               self.to_index((state[0], 0))]
+        go_bottom_distance += self.map.distance[self.to_index((state[0], self.map.y_limit)),
+                                                goal_state_index]
+
+        go_left_distance = self.map.distance[state_index,
+                                             self.to_index((0, state[1]))]
+        go_left_distance += self.map.distance[self.to_index((self.map.x_limit, state[1])),
+                                              goal_state_index]
+
+        go_right_distance = self.map.distance[state_index,
+                                              self.to_index((self.map.x_limit, state[1]))]
+        go_right_distance += self.map.distance[self.to_index((0, state[1])),
+                                               goal_state_index]
+
+        return min(real_distance, go_top_distance, go_bottom_distance, go_left_distance, go_right_distance)
+
+    def to_index(self, point):
+        return point[0] * self.map.y_size + point[1]
 
     def cell_valid(self, cell):
         result = np.where((self.map.obstacles == cell).all(axis=1))
