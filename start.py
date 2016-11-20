@@ -25,16 +25,16 @@ def main(argv):
     oponentAgent_name = "Mirror"
     oponent_url = None
     try:
-        opts, args = getopt.getopt(argv,"hm:s:o:p",["help","map=","disable-video","student-agent=","oponent-agent=","proxy"])
+        opts, args = getopt.getopt(argv,"hm:s:o:p",["help","agent_brain=","disable-video","student-agent=","oponent-agent=","proxy"])
     except getopt.GetoptError as e:
         print(e)
-        print('start.py [-h/--help -m/--map <mapfile> --disable-video -p/--proxy -s/--student-agent AgentName,Name[,websocket] -o/--oponent-name AgentName,Name[,websocket]]')
+        print('start.py [-h/--help -m/--agent_brain <mapfile> --disable-video -p/--proxy -s/--student-agent AgentName,Name[,websocket] -o/--oponent-name AgentName,Name[,websocket]]')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('start.py [-h/--help -m/--map <mapfile> --disable-video -p/--proxy -s/--student-agent AgentName,Name[,websocket] -o/--oponent-name AgentName,Name[,websocket]]')
+            print('start.py [-h/--help -m/--agent_brain <mapfile> --disable-video -p/--proxy -s/--student-agent AgentName,Name[,websocket] -o/--oponent-name AgentName,Name[,websocket]]')
             sys.exit()
-        elif opt in ("-m", "--map"):
+        elif opt in ("-m", "--agent_brain"):
             inputfile = arg
         elif opt in ("--disable-video"):
             visual = False 
@@ -64,7 +64,7 @@ def main(argv):
         print("Connecting to {}".format(url))
         asyncio.get_event_loop().run_until_complete(proxy(student_url,StudentAgent, studentAgent_name))
     else:
-        snake=SnakeGame(hor=60, ver=40, fps=100, visual=visual, obstacles=15, mapa=inputfile)
+        snake=SnakeGame(hor=60, ver=40, fps=50, visual=visual, obstacles=15, mapa=inputfile)
         snake.setPlayers([  
             StudentAgent([snake.playerPos()], name=studentAgent_name) if student_url == None else StudentAgent([snake.playerPos()], name=student_name, url=student_url),
             OponentAgent([snake.playerPos()], name=oponentAgent_name) if oponent_url == None else OponentAgent([snake.playerPos()], name=oponentAgent_name, url=oponent_url),
