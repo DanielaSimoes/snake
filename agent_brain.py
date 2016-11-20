@@ -20,7 +20,6 @@ class AgentBrain:
     def __init__(self, map_size, agent_time, name):
         self.obstacles = None
         self.head_collision_matrix = None
-        self.distance = None
         self.body = None
         self.agent_time = agent_time
         self.name = name
@@ -33,7 +32,12 @@ class AgentBrain:
 
         self.maze = None
 
-        self.calc_distances()
+        cords = list(itertools.product(np.arange(self.x_size), np.arange(self.y_size)))
+        cords = np.array(cords)
+        self.distance = d.cdist(cords, cords)
+
+        self.visited = []
+        self.dist_to_walk = 1
 
     def update(self, maze=None, body=None):
         if maze is not None:
@@ -53,22 +57,10 @@ class AgentBrain:
                                                    (other_head_position[0]+1, other_head_position[1]),
                                                    (other_head_position[0]-1, other_head_position[1])])
 
-    def calc_distances(self):
-        cords = list(itertools.product(np.arange(self.x_size), np.arange(self.y_size)))
-        cords = np.array(cords)
-        self.distance = d.cdist(cords, cords)
-
     def get_direction(self, from_point, to):
-        problem = GridConnections(self)
-        tree = SearchTree(SearchProblem(problem, from_point, to))
-        return tree.search()
-
-
-class GridConnections:
-    def __init__(self, brain):
-        self.brain = brain
         self.visited = []
-        self.dist_to_walk = 1
+        tree = SearchTree(SearchProblem(self, from_point, to))
+        return tree.search()
 
     def actions(self, cell, avoidance=True):
         self.visited += [cell]
@@ -78,18 +70,23 @@ class GridConnections:
                    (cell[0] + self.dist_to_walk, cell[1]), (cell[0] - self.dist_to_walk, cell[1])]
 
         for i in options:
-            if i[0] < 0:  # if the agent_brain does not continue to the left, snake returns from the right side
-                action = (i[0] + self.brain.x_size, i[1])
-            elif i[1] < 0:  # if the agent_brain does not continue to the top, snake returns from the bottom side
-                action = (i[0], i[1] + self.brain.y_size)
-            elif i[0] >= self.brain.x_size:  # if the agent_brain does not continue to the right, snake returns from the left side
-                action = (i[0] % self.brain.x_size, i[1])
-            elif i[1] >= self.brain.y_size:  # if the agent_brain does not continue to the right, snake returns from the left side
-                action = (i[0], i[1] % self.brain.y_size)
+            if i[0] < 0:
+                # if the agent_brain does not continue to the left, snake returns from the right side
+                action = (i[0] + self.x_size, i[1])
+            elif i[1] < 0:
+                # if the agent_brain does not continue to the top, snake returns from the bottom side
+                action = (i[0], i[1] + self.y_size)
+            elif i[0] >= self.x_size:
+                # if the agent_brain does not continue to the right, snake returns from the left side
+                action = (i[0] % self.x_size, i[1])
+            elif i[1] >= self.y_size:
+                # if the agent_brain does not continue to the right, snake returns from the left side
+                action = (i[0], i[1] % self.y_size)
             else:
                 action = i
 
-            if avoidance and action not in self.visited and self.is_not_obstacle(action) and self.head_collision_avoidance(action):
+            if avoidance and action not in self.visited and self.is_not_obstacle(action) and \
+                    self.head_collision_avoidance(action):
                 actlist += [action]
             elif not avoidance and self.is_not_obstacle(action):
                 actlist += [action]
@@ -100,40 +97,40 @@ class GridConnections:
         goal_state_index = self.to_index(goal_state)
         state_index = self.to_index(state)
 
-        real_distance = self.brain.distance[state_index,
+        real_distance = self.distance[state_index,
                                             goal_state_index]
 
-        go_top_distance = self.brain.distance[state_index,
-                                              self.to_index((state[0], self.brain.y_limit))]
-        go_top_distance += self.brain.distance[self.to_index((state[0], 0)),
+        go_top_distance = self.distance[state_index,
+                                              self.to_index((state[0], self.y_limit))]
+        go_top_distance += self.distance[self.to_index((state[0], 0)),
                                                goal_state_index]
 
-        go_bottom_distance = self.brain.distance[state_index,
+        go_bottom_distance = self.distance[state_index,
                                                  self.to_index((state[0], 0))]
-        go_bottom_distance += self.brain.distance[self.to_index((state[0], self.brain.y_limit)),
+        go_bottom_distance += self.distance[self.to_index((state[0], self.y_limit)),
                                                   goal_state_index]
 
-        go_left_distance = self.brain.distance[state_index,
+        go_left_distance = self.distance[state_index,
                                                self.to_index((0, state[1]))]
-        go_left_distance += self.brain.distance[self.to_index((self.brain.x_limit, state[1])),
+        go_left_distance += self.distance[self.to_index((self.x_limit, state[1])),
                                                 goal_state_index]
 
-        go_right_distance = self.brain.distance[state_index,
-                                                self.to_index((self.brain.x_limit, state[1]))]
-        go_right_distance += self.brain.distance[self.to_index((0, state[1])),
+        go_right_distance = self.distance[state_index,
+                                                self.to_index((self.x_limit, state[1]))]
+        go_right_distance += self.distance[self.to_index((0, state[1])),
                                                  goal_state_index]
 
         return min(real_distance, go_top_distance, go_bottom_distance, go_left_distance, go_right_distance)
 
     def to_index(self, point):
-        return point[0] * self.brain.y_size + point[1]
+        return point[0] * self.y_size + point[1]
 
     def is_not_obstacle(self, cell):
-        result = np.where((self.brain.obstacles == cell).all(axis=1))
+        result = np.where((self.obstacles == cell).all(axis=1))
         return not (len(result[0]) and len(result[1]))
 
     def head_collision_avoidance(self, cell):
-        result = np.where((self.brain.head_collision_matrix == cell).all(axis=1))
+        result = np.where((self.head_collision_matrix == cell).all(axis=1))
         return not (len(result[0]) and len(result[1]))
 
 
@@ -183,7 +180,7 @@ class SearchTree:
         # max_iteration = 10
         # iteration = 0
 
-        while self.open_nodes != []:
+        while self.open_nodes:
             self.node = self.open_nodes[0]
             self.open_nodes[0:1] = []
 
@@ -205,7 +202,7 @@ class SearchTree:
                 print("avoidance")
                 self.actions = self.problem.domain.actions(self.node.state, avoidance=False)
             # elif len(actions) == 0:
-            #   print("ELSE", self.problem.domain.brain.name, self.problem.goal, self.problem.initial, self.open_nodes)
+            #   print("ELSE", self.problem.domain.name, self.problem.goal, self.problem.initial, self.open_nodes)
 
             for newstate in self.actions:
                 if newstate not in self.result:
@@ -220,7 +217,7 @@ class SearchTree:
 
     def search(self):
         signal.signal(signal.SIGALRM, self.signal_handler)
-        agent_time = (self.problem.domain.brain.agent_time/1000)*(4/5)
+        agent_time = (self.problem.domain.agent_time/1000)*(4/5)
 
         signal.setitimer(signal.ITIMER_REAL, agent_time)
 
@@ -232,28 +229,22 @@ class SearchTree:
             signal.alarm(0)
 
         # get the direction
-        direction = self.problem.domain.brain.direction
+        direction = self.problem.domain.direction
 
-        """
-        The path is not none, we have path and the path as length > 2,
-        the path is a list of cells, which cell is a tuple of X, Y.
-        The first entry of the path is the head position, the last is the
-        food pos if the path to the food take the normal time to be calculated.
-        """
         if len(self.result) > 1:
-            direction = sub(self.result[1], self.problem.domain.brain.body[0])
+            direction = sub(self.result[1], self.problem.domain.body[0])
         elif len(self.result) == 1:
             print("actions", self.actions, "open_nodes", self.open_nodes, "state", self.problem.initial, "goal",
                   self.problem.goal, "atual", self.node)
 
-            print(self.problem.domain.brain.name, "size 1", "path", self.result)
+            print(self.problem.domain.name, "size 1", "path", self.result)
 
         if direction[0] > 1 or direction[0] < -1:
-            direction = -int(self.problem.domain.brain.x_size*1.0 / direction[0]), direction[1]
+            direction = -int(self.problem.domain.x_size * 1.0 / direction[0]), direction[1]
         if direction[1] > 1 or direction[1] < -1:
-            direction = direction[0], -int(self.problem.domain.brain.y_size*1.0 / (direction[1]))
+            direction = direction[0], -int(self.problem.domain.y_size * 1.0 / (direction[1]))
 
-        self.problem.domain.brain.direction = direction
+        self.problem.domain.direction = direction
 
         return direction
 
