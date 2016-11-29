@@ -17,13 +17,15 @@ class AgentBrain:
     Our interpretation of the game, the obstacles, distances, and limits.
     The maze given by the game is stored here.
     """
-    def __init__(self, map_size, agent_time, name):
+    def __init__(self, map_size, agent_time, name, winning_points):
         self.obstacles = None
         self.head_collision_matrix = None
         self.body = None
         self.agent_time = agent_time
         self.name = name
         self.direction = (0, 0)
+        self.winning_points = winning_points
+        self.other_head_position = (0,0)
 
         self.x_size = map_size[0]
         self.y_size = map_size[1]
@@ -49,13 +51,13 @@ class AgentBrain:
         if self.maze is not None:
             self.obstacles = np.matrix(self.maze.obstacles+self.maze.playerpos)
 
-            other_head_position = maze.playerpos[0] if self.body[0] != maze.playerpos[0] \
+            self.other_head_position = maze.playerpos[0] if self.body[0] != maze.playerpos[0] \
                 else maze.playerpos[len(self.body)]
 
-            self.head_collision_matrix = np.matrix([(other_head_position[0], other_head_position[1]+1),
-                                                   (other_head_position[0], other_head_position[1]-1),
-                                                   (other_head_position[0]+1, other_head_position[1]),
-                                                   (other_head_position[0]-1, other_head_position[1])])
+            self.head_collision_matrix = np.matrix([(self.other_head_position[0], self.other_head_position[1]+1),
+                                                   (self.other_head_position[0], self.other_head_position[1]-1),
+                                                   (self.other_head_position[0]+1, self.other_head_position[1]),
+                                                   (self.other_head_position[0]-1, self.other_head_position[1])])
 
     def get_direction(self, from_point, to):
         self.visited = []
@@ -211,19 +213,36 @@ class SearchTree:
             self.search_helper()
             signal.alarm(0)
         except Exception:
-            print("ENTREI")
-            signal.alarm(0)
+            pass
+            #print("ENTREI")
+            #signal.alarm(0)
 
         # get the direction
         direction = self.domain.direction
 
-        if len(self.result) > 1:
+        if len(self.result) > 2:
             direction = sub(self.result[1], self.domain.body[0])
-        elif len(self.result) == 1:
-            print("actions", self.actions, "open_nodes", self.open_nodes, "state", self.initial, "goal",
-                  self.goal, "atual", self.node)
+        elif len(self.result) == 2:
+            print("==2 PATH")
+            print(self.domain.maze.foodpos)
+            direction = sub(self.result[1], self.domain.body[0])
 
-            print(self.domain.name, "size 1", "path", self.result)
+            food_collision_matrix = [(self.domain.maze.foodpos[0], self.domain.maze.foodpos[1] + 1),
+                                     (self.domain.maze.foodpos[0], self.domain.maze.foodpos[1] - 1),
+                                     (self.domain.maze.foodpos[0] + 1, self.domain.maze.foodpos[1]),
+                                     (self.domain.maze.foodpos[0] - 1, self.domain.maze.foodpos[1])]
+
+            if self.domain.other_head_position in food_collision_matrix and not self.domain.winning_points:  # running away
+                self.visited = []
+                print("PERTO")
+                actions = self.domain.actions(self.node.state)
+                if self.domain.maze.foodpos in actions:
+                    actions = actions.remove(self.domain.maze.foodpos)
+                    direction = sub(actions[0], self.domain.body[0])
+                    print("RUN")
+
+        else:
+            print("NENHUMA OPCAO")
 
         if direction[0] > 1 or direction[0] < -1:
             direction = -int(self.domain.x_size * 1.0 / direction[0]), direction[1]

@@ -21,7 +21,7 @@ def main(argv):
     StudentAgent = Student
     studentAgent_name = "DC"
     student_url = None
-    OponentAgent = Student
+    OponentAgent = Agent1
     oponentAgent_name = "Mirror"
     oponent_url = None
     try:

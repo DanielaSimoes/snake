@@ -30,7 +30,7 @@ class Student(Snake):
         self.winning_points = points[1][1] < points[0][1] if points[0][0] == self.name else points[0][1] < points[1][1]
 
         if self.agent_brain is None:
-            self.agent_brain = AgentBrain(map_size=mapsize, agent_time=agent_time, name=self.name)
+            self.agent_brain = AgentBrain(map_size=mapsize, agent_time=agent_time, name=self.name, winning_points=self.winning_points)
 
     def updateDirection(self, maze):
         head_position = self.body[0]
