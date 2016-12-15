@@ -214,8 +214,6 @@ class SearchTree:
             signal.alarm(0)
         except Exception:
             pass
-            #print("ENTREI")
-            #signal.alarm(0)
 
         # get the direction
         direction = self.domain.direction
@@ -223,8 +221,6 @@ class SearchTree:
         if len(self.result) > 2:
             direction = sub(self.result[1], self.domain.body[0])
         elif len(self.result) == 2:
-            print("==2 PATH")
-            print(self.domain.maze.foodpos)
             direction = sub(self.result[1], self.domain.body[0])
 
             food_collision_matrix = [(self.domain.maze.foodpos[0], self.domain.maze.foodpos[1] + 1),
@@ -234,15 +230,10 @@ class SearchTree:
 
             if self.domain.other_head_position in food_collision_matrix and not self.domain.winning_points:  # running away
                 self.visited = []
-                print("PERTO")
                 actions = self.domain.actions(self.node.state)
                 if self.domain.maze.foodpos in actions:
                     actions = actions.remove(self.domain.maze.foodpos)
                     direction = sub(actions[0], self.domain.body[0])
-                    print("RUN")
-
-        else:
-            print("NENHUMA OPCAO")
 
         if direction[0] > 1 or direction[0] < -1:
             direction = -int(self.domain.x_size * 1.0 / direction[0]), direction[1]
