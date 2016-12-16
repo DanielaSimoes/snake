@@ -64,6 +64,7 @@ class AgentBrain:
         self.result = []
         self.node = None
         self.actions = []
+        self.start = None
 
     def get_actions(self, cell, avoidance=True):
         self.visited += [cell]
@@ -179,7 +180,7 @@ class AgentBrain:
 
     def search_helper(self):
         visited = []
-        start = time.time()
+        self.start = time.time()
 
         # max_iteration = 10
         # iteration = 0
@@ -189,6 +190,8 @@ class AgentBrain:
             self.open_nodes[0:1] = []
 
             if self.goal_test(self.node.state):
+                end = time.time()
+                print(self.name, int(round((end - self.start) * 1000)))
                 signal.alarm(0)
                 return
 
@@ -212,7 +215,7 @@ class AgentBrain:
             self.add_to_open(lnewnodes)
 
         end = time.time()
-        print(self.name, int(round((end - start) * 1000)))
+        print(self.name, int(round((end - self.start) * 1000)))
         signal.alarm(0)
 
     def signal_handler(self, signum, frame):
@@ -268,7 +271,7 @@ class AgentBrain:
 
 #           print("initial: ", initial, " goal: ", goal)
             for cell in self.result[self.result.index(self.initial)+1:self.result.index(self.goal)+1]:
-                if self.is_not_player(cell):
+                if self.is_not_player(cell) and self.head_collision_avoidance(cell):
                     tmp += [cell]
                 else:
                     break
@@ -295,7 +298,14 @@ class AgentBrain:
             self.search_helper()
             signal.alarm(0)
         except NoTimeException as e:
+            end = time.time()
+            print(self.name, int(round((end - self.start) * 1000)))
             pass
+
+        # time
+        signal.signal(signal.SIGALRM, self.signal_handler)
+        release_time = (self.agent_time/1000)*(3/20)
+        signal.setitimer(signal.ITIMER_REAL, release_time)
 
         self.result += get_path(self.node)
 
@@ -303,11 +313,6 @@ class AgentBrain:
 
         # get the previous direction
         direction = self.direction
-
-        # time
-        signal.signal(signal.SIGALRM, self.signal_handler)
-        release_time = (self.agent_time/1000)*(2/20)
-        signal.setitimer(signal.ITIMER_REAL, release_time)
 
         try:
             if len(self.result) > 2:
