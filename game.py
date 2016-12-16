@@ -264,7 +264,7 @@ class SnakeGame:
                     for part in player.body[1:]:
                         pygame.draw.rect(self.screen, player.color, (part[0]*self.tilesize,part[1]*self.tilesize,self.tilesize,self.tilesize),0)
 
-                for obstacle in self.obstacles: #print obstacles
+                for obstacle in self.obstacles: #print walls
                     pygame.draw.rect(self.screen,self.obscolor,(obstacle[0]*self.tilesize,obstacle[1]*self.tilesize,self.tilesize,self.tilesize),0)
 
                 #print food

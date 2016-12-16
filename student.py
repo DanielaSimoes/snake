@@ -35,5 +35,4 @@ class Student(Snake):
     def updateDirection(self, maze):
         head_position = self.body[0]
 
-        self.agent_brain.update(maze=maze, body=self.body)
-        self.direction = self.agent_brain.get_direction(head_position, maze.foodpos)
+        self.direction = self.agent_brain.get_direction(maze=maze, body=self.body, from_point=head_position, to=maze.foodpos)
