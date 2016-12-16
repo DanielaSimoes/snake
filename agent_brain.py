@@ -39,6 +39,8 @@ class AgentBrain:
         self.x_limit = map_size[0]-1
         self.y_limit = map_size[1]-1
 
+        self.search_tree = SearchTree()
+
         self.maze = None
 
         cords = list(itertools.product(np.arange(self.x_size), np.arange(self.y_size)))
@@ -70,8 +72,7 @@ class AgentBrain:
 
     def get_direction(self, from_point, to):
         self.visited = []
-        tree = SearchTree(self, from_point, to)
-        return tree.search()
+        return self.search_tree.search(self, from_point, to)
 
     def actions(self, cell, avoidance=True):
         self.visited += [cell]
@@ -189,15 +190,13 @@ class SearchNode:
 
 
 class SearchTree:
-    def __init__(self, domain, initial, goal):
-        self.domain = domain
-        self.initial = initial
-        self.goal = goal
-        root = SearchNode(initial, None, self.domain.heuristic(self.initial, self.goal))
-        self.open_nodes = [root]
+    def __init__(self):
+        self.domain = None
+        self.initial = None
+        self.goal = None
+        self.open_nodes = []
         self.result = []
-        self.node = root
-        # TO TEST
+        self.node = None
         self.actions = []
 
     def get_path(self, node):
@@ -211,6 +210,7 @@ class SearchTree:
 
     def search_helper(self):
         visited = []
+        start = time.time()
 
         # max_iteration = 10
         # iteration = 0
@@ -218,8 +218,6 @@ class SearchTree:
         while self.open_nodes:
             self.node = self.open_nodes[0]
             self.open_nodes[0:1] = []
-
-            self.result = self.get_path(self.node)
 
             if self.goal_test(self.node.state):
                 signal.alarm(0)
@@ -244,13 +242,53 @@ class SearchTree:
                     lnewnodes += [SearchNode(newstate, self.node, heuristic)]
             self.add_to_open(lnewnodes)
 
+        end = time.time()
+        print(self.domain.name, int(round((end - start) * 1000)))
         signal.alarm(0)
 
     def signal_handler(self, signum, frame):
         raise NoTimeException("Timed out!")
 
-    def search(self):
-        start = time.time()
+    def search(self, domain, initial, goal):
+        # if initial in self.result:
+        #     aval = sub(self.result[-1], goal)
+        #     print(abs(aval[0]) == 1 or abs(aval[1]) == 1)
+
+        self.domain = domain
+
+        # verify if the result has the initial point
+        if initial in self.result and goal in self.result:
+            # we have the path from the initial to the goal state
+            tmp = []
+
+#           print("initial: ", initial, " goal: ", goal)
+            for cell in self.result[self.result.index(initial)+1:self.result.index(goal)+1]:
+                if self.domain.is_not_obstacle(cell):
+                    tmp += [cell]
+                else:
+                    break
+
+            if len(tmp) == 0:
+                self.result = []
+                self.initial = initial
+            else:
+                self.result = [initial] + tmp[:-1]
+                self.initial = tmp[-1]
+
+#           print("self.result antes: ", tmp, self.result, self.initial)
+            self.goal = goal
+        else:
+            # reset
+            self.initial = initial
+            self.goal = goal
+            self.result = []
+            # reset
+
+        root = SearchNode(self.initial, None, self.domain.heuristic(self.initial, self.goal))
+        self.open_nodes = [root]
+        self.node = root
+        self.actions = []
+
         # print(self.domain.agent_time)
         signal.signal(signal.SIGALRM, self.signal_handler)
         search_time = (self.domain.agent_time/1000)*(15/20)
@@ -262,10 +300,11 @@ class SearchTree:
         except NoTimeException as e:
             pass
 
-        end = time.time()
-        print(self.domain.name, int(round((end - start) * 1000)))
+        self.result += self.get_path(self.node)
 
-        # get the direction
+#       print(self.result)
+
+        # get the previous direction
         direction = self.domain.direction
 
         # time
@@ -284,7 +323,8 @@ class SearchTree:
                                          (self.domain.maze.foodpos[0] + 1, self.domain.maze.foodpos[1]),
                                          (self.domain.maze.foodpos[0] - 1, self.domain.maze.foodpos[1])]
 
-                if self.domain.other_head_position in food_collision_matrix and not self.domain.winning_points:  # running away
+                if self.domain.other_head_position in food_collision_matrix and not self.domain.winning_points:
+                    # running away
                     self.visited = []
                     actions = self.domain.actions(self.node.state)
                     if self.domain.maze.foodpos in actions:
