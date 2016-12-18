@@ -27,6 +27,7 @@ class Student(Snake):
         self.x_size = 0
         # position of our snake head
         self.head_position = body[0]
+        self.other_head_position = (0,0)
         # direction
         self.direction = direction
         # store maze for domain
@@ -67,13 +68,13 @@ class Student(Snake):
         self.head_position = self.body[0]
         self.maze = maze
 
-        other_head_position = maze.playerpos[0] if self.body[0] != maze.playerpos[0] \
+        self.other_head_position = maze.playerpos[0] if self.body[0] != maze.playerpos[0] \
             else maze.playerpos[len(self.body)]
 
-        self.head_collision = {(other_head_position[0], other_head_position[1] + 1),
-                               (other_head_position[0], other_head_position[1] - 1),
-                               (other_head_position[0] + 1, other_head_position[1]),
-                               (other_head_position[0] - 1, other_head_position[1])}
+        self.head_collision = {(self.other_head_position[0], self.other_head_position[1] + 1),
+                               (self.other_head_position[0], self.other_head_position[1] - 1),
+                               (self.other_head_position[0] + 1, self.other_head_position[1]),
+                               (self.other_head_position[0] - 1, self.other_head_position[1])}
 
         # we must limit our think time, and we will limit the time
         # to the tree search return the value
@@ -117,6 +118,22 @@ class Student(Snake):
 
         if len(self.result) >= 2:
             self.direction = sub(self.result[1], self.head_position)
+        elif len(self.result) == 2:
+            self.direction = sub(self.result[1], self.head_position)
+
+            food_collision_matrix = [(self.maze.foodpos[0], self.maze.foodpos[1] + 1),
+                                     (self.maze.foodpos[0], self.maze.foodpos[1] - 1),
+                                     (self.maze.foodpos[0] + 1, self.maze.foodpos[1]),
+                                     (self.maze.foodpos[0] - 1, self.maze.foodpos[1])]
+
+            if self.other_head_position in food_collision_matrix and not self.winning_points:
+                # running away
+                self.visited_cells = {}
+                actions_list = self.actions(self.node.state)
+
+                if self.maze.foodpos in actions_list:
+                    actions_list.remove(self.maze.foodpos)
+                    self.direction = sub(actions_list[0], self.body[0])
         else:
             print("NAO DEVIA ACONTECER 1")
 
