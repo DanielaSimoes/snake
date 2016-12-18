@@ -3,6 +3,7 @@ import scipy.spatial.distance as d
 import numpy as np
 import itertools
 import signal
+import time
 
 
 def add(a, b):
@@ -22,8 +23,6 @@ class Student(Snake):
     def __init__(self, body=[(0, 0)], direction=(0, 0), name="DC"):
         self.agent_time = None
         self.winning_points = False
-        # distances array
-        self.distances = None
         # map limits and sizes
         self.x_limit = 0
         self.y_limit = 0
@@ -41,6 +40,8 @@ class Student(Snake):
         self.dist_to_walk = 1
         # node of tree search
         self.node = None
+        # avoid collision
+        self.head_collision = None
         super().__init__(body, direction, name=name)
 
     def signal_handler(self, signum, frame):
@@ -55,10 +56,7 @@ class Student(Snake):
             else points[0][1] < points[1][1]
 
         # if distances is None and mapsize is not None we can instantiate the distance_array
-        if self.distances is None and mapsize is not None:
-            cords = np.array(list(itertools.product(np.arange(mapsize[0]), np.arange(mapsize[1]))))
-            self.distances = d.cdist(cords, cords)
-
+        if self.x_limit == 0 and mapsize is not None:
             # now we will save the limits of the map
             self.x_limit = mapsize[0]-1
             self.y_limit = mapsize[1]-1
@@ -70,31 +68,47 @@ class Student(Snake):
         self.head_position = self.body[0]
         self.maze = maze
 
+        other_head_position = maze.playerpos[0] if self.body[0] != maze.playerpos[0] \
+            else maze.playerpos[len(self.body)]
+
+        self.head_collision = {(other_head_position[0], other_head_position[1] + 1),
+                                      (other_head_position[0], other_head_position[1] - 1),
+                                      (other_head_position[0] + 1, other_head_position[1]),
+                                      (other_head_position[0] - 1, other_head_position[1])}
+
         # we must limit our think time, and we will limit the time
         # to the tree search return the value
         signal.signal(signal.SIGALRM, self.signal_handler)
-        search_time = (self.agent_time / 1000) * (15 / 20)  # 15/20 = 75%
+        search_time = (self.agent_time / 1000) * (15 / 20)  # 15/20 = 75% # 17/20 = 85%
         signal.setitimer(signal.ITIMER_REAL, search_time)
 
         self.visited_cells = set()
+
         problem = SearchProblem(self, self.head_position, self.maze.foodpos)
+        tree_search = SearchTree(problem)
 
         try:
-            tree_search = SearchTree(problem)
             tree_search.search()
+            signal.alarm(0)
         except NoTimeException as e:
             pass
 
-        result = problem.domain.get_path(self.node)
+        result = tree_search.get_path(self.node)
 
         if len(result) >= 2:
             self.direction = sub(result[1], self.head_position)
         else:
-            print("NAO DEVIA ACONTECER")
-            
+            print("NAO DEVIA ACONTECER 1")
+
+        if self.direction[0] > 1 or self.direction[0] < -1:
+            self.direction = -int(self.x_size * 1.0 / self.direction[0]), self.direction[1]
+
+        if self.direction[1] > 1 or self.direction[1] < -1:
+            self.direction = self.direction[0], -int(self.y_size * 1.0 / (self.direction[1]))
+
     def actions(self, cell):
         if cell in self.visited_cells:
-            print("NAO DEVIA ACONTECER")
+            print("NAO DEVIA ACONTECER 2")
 
         self.visited_cells.add(cell)
         actlist = []
@@ -118,30 +132,63 @@ class Student(Snake):
             else:
                 action = option
 
-            if action not in self.visited_cells and self.is_not_obstacle(action) and self.is_not_player_pos(action):
+            if action not in self.visited_cells and self.is_not_obstacle(action) and self.is_not_player_pos(action)\
+                    and self.head_collision_avoidance(action):
                 actlist += [action]
 
         return actlist
 
     def is_not_obstacle(self, cell):
-        return not (cell in self.maze.obstacles)
+        return cell not in self.maze.obstacles
 
     def is_not_player_pos(self, cell):
-        return not (cell in self.maze.playerpos)
+        return cell not in self.maze.playerpos
 
-    def to_index(self, cell):
-        return cell[0] * self.y_size + cell[1]
+    def head_collision_avoidance(self, cell):
+        return cell not in self.head_collision
+
+    def distance(self, state, goal_state):
+        return ((state[0]-goal_state[0])**2 + (state[1]-goal_state[1])**2)**0.5
 
     def heuristic(self, state, goal_state):
-        return self.distances[self.to_index(goal_state), self.to_index(state)]
+        distances = list()
 
-    def result(self, state, action):
-        c1, c2 = action
+        # real_distance
+        distances.append(self.distance(state, goal_state))
 
-        if c1 == state:
-            return c2
-        elif c2 == state:
-            return c1
+        # go_top_distance
+        go_top_distance_point1 = (state[0], self.y_limit)
+        go_top_distance_point2 = (state[0], 0)
+
+        if self.is_not_obstacle(go_top_distance_point1) and  self.is_not_obstacle(go_top_distance_point2):
+            distances.append(self.distance(state, go_top_distance_point1) +
+                             self.distance(go_top_distance_point2, goal_state))
+
+        # go_bottom_distance
+        go_bottom_distance_point1 = (state[0], 0)
+        go_bottom_distance_point2 = (state[0], self.y_limit)
+
+        if self.is_not_obstacle(go_bottom_distance_point1) and self.is_not_obstacle(go_bottom_distance_point2):
+            distances.append(self.distance(state, go_bottom_distance_point1) +
+                             self.distance(go_bottom_distance_point2, goal_state))
+
+        # go_left_distance
+        go_left_distance_point1 = (0, state[1])
+        go_left_distance_point2 = (self.x_limit, state[1])
+
+        if self.is_not_obstacle(go_left_distance_point1) and self.is_not_obstacle(go_left_distance_point2):
+            distances.append(self.distance(state, go_left_distance_point1) +
+                             self.distance(go_left_distance_point2, goal_state))
+
+        # go_right_distance
+        go_right_distance_point1 = (self.x_limit, state[1])
+        go_right_distance_point2 = (0, state[1])
+
+        if self.is_not_obstacle(go_right_distance_point1) and self.is_not_obstacle(go_right_distance_point2):
+            distances.append(self.distance(state, go_right_distance_point1) +
+                             self.distance(go_right_distance_point2, goal_state))
+
+        return min(distances)
 
 
 class SearchProblem:
@@ -190,11 +237,11 @@ class SearchTree:
             visited += [self.problem.domain.node.state]
             lnewnodes = []
 
-            for a in self.problem.domain.actions(self.problem.domain.node.state):
-                newstate = self.problem.domain.result(self.problem.domain.node.state, a)
+            for newstate in self.problem.domain.actions(self.problem.domain.node.state):
                 if newstate not in self.get_path(self.problem.domain.node):
                     heuristic = self.problem.domain.heuristic(newstate, self.problem.goal)
                     lnewnodes += [SearchNode(newstate, self.problem.domain.node, heuristic)]
+
             self.add_to_open(lnewnodes)
 
         return []

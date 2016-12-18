@@ -88,12 +88,6 @@ class AgentBrain:
         return actlist
 
     def heuristic(self, state, goal_state):
-        # return self.distance[self.to_index(goal_state), self.to_index(state)]
-        """
-        (x1,y1) = state
-        (x2,y2) = goal_state
-        return sqrt( (x1-x2)**2 + (y1-y2)**2 )
-        """
         if (state, goal_state) in self.heuristic_distances:
             return self.heuristic_distances[(state, goal_state)]
         elif (goal_state, state) in self.heuristic_distances:
