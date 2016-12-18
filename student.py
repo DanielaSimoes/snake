@@ -17,20 +17,6 @@ class NoTimeException(BaseException):
         self.message = message
 
 
-class FoodPosArea:
-
-    def __init__(self, food_pos):
-        self.limit = 2
-        self.x_minus = food_pos[0]-self.limit
-        self.x_plus = food_pos[0]+self.limit
-        self.y_minus = food_pos[1]-self.limit
-        self.y_plus = food_pos[1]+self.limit
-        self.area_center = food_pos
-
-    def valid(self, food_pos):
-        return self.x_minus <= food_pos[0] <= self.x_plus and self.y_minus <= food_pos[1] <= self.y_plus
-
-
 class Student(Snake):
     def __init__(self, body=[(0, 0)], direction=(0, 0), name="DC"):
         self.agent_time = None
@@ -57,10 +43,6 @@ class Student(Snake):
         self.head_collision = None
         # path result
         self.result = []
-        # area food pos
-        self.food_area = None
-        # tree search
-        self.tree_search = None
         super().__init__(body, direction, name=name)
 
     def signal_handler(self, signum, frame):
@@ -101,66 +83,39 @@ class Student(Snake):
         search_time = (self.agent_time / 1000) * (15 / 20)  # 15/20 = 75% # 17/20 = 85%
         signal.setitimer(signal.ITIMER_REAL, search_time)
 
+        tree_search = None  # only for code proposes
+        previous_search = []  # to use the previous path that we can use
+
         try:
-            flag = True
+            self.visited_cells = set()
+            initial = self.head_position
 
             # we will try to use the previous path
             # if the resulthas the initial point and the goal point
             if self.head_position in self.result and self.maze.foodpos in self.result:
                 # we have to verify if the path that we can take advantage have an
                 # player or head collision avoidance
+                tmp = []
 
                 for cell in self.result[self.result.index(self.head_position)+1:self.result.index(self.maze.foodpos)+1]:
-                    if not self.is_not_player_pos(cell) or not self.head_collision_avoidance(cell):
-                        flag = False
+                    if self.is_not_player_pos(cell) and self.head_collision_avoidance(cell):
+                        tmp += [cell]
+                    else:
+                        break
 
-                if flag:
-                    # use the tree search
-                    print(self.name, "reaproveitei caminho")
+                if len(tmp) != 0:
+                    previous_search = [self.head_position] + tmp[:-1]
+                    initial = tmp[-1]
+                    print(self.name, "reaproveitei")
 
-            elif self.head_position in self.result:
-                # verify if is in food pos
-
-                if self.food_area is not None and self.food_area.valid(self.maze.foodpos):
-                    # yes is in food pos
-
-                    for cell in self.result[self.result.index(self.head_position)+1:]:
-                        if not self.is_not_player_pos(cell) or not self.head_collision_avoidance(cell):
-                            flag = False
-
-                    if flag:
-                        print(self.name, "reaproveitei food area")
-                else:
-                    print(self.name, "\n\n\n## NEW FOOD AREA\n\n\n")
-                    self.food_area = FoodPosArea(self.maze.foodpos)
-                    flag = False
-            else:
-                flag = False
-
-            if not flag:
-                self.visited_cells = set()
-                problem = SearchProblem(self, self.head_position, self.maze.foodpos)
-                self.tree_search = SearchTree(problem)
-            else:
-                # re-usage of tree search
-                # visited_cells not reset
-                # change the search problem goal
-                self.tree_search.problem.goal = self.maze.foodpos  # optimize later
-                self.tree_search.problem.initial = self.head_position
-
-            self.tree_search.search()
+            problem = SearchProblem(self, initial, self.maze.foodpos)
+            tree_search = SearchTree(problem)
+            tree_search.search()
             signal.alarm(0)
         except NoTimeException as e:
             pass
 
-        self.result = self.tree_search.get_path(self.node)
-
-        if self.head_position in self.result:
-            self.result = self.result[self.result.index(self.head_position):]
-        else:
-            print(self.head_position, self.result)
-
-        print(len(self.result))
+        self.result = previous_search + tree_search.get_path(self.node)
 
         if len(self.result) >= 2:
             self.direction = sub(self.result[1], self.head_position)
@@ -181,7 +136,7 @@ class Student(Snake):
                     actions_list.remove(self.maze.foodpos)
                     self.direction = sub(actions_list[0], self.body[0])
         else:
-            print("NAO DEVIA ACONTECER 1", len(self.result), " result ", self.result)
+            print("NAO DEVIA ACONTECER 1")
 
         if self.direction[0] > 1 or self.direction[0] < -1:
             self.direction = -int(self.x_size * 1.0 / self.direction[0]), self.direction[1]
@@ -325,7 +280,6 @@ class SearchTree:
         self.open_nodes = [SearchNode(problem.initial, None,
                                       self.problem.domain.heuristic(self.problem.initial, self.problem.goal))]
         self.result = []
-        self.visited = []
 
     def get_path(self, node):
         if node.parent is None:
@@ -334,25 +288,19 @@ class SearchTree:
         return self.get_path(node.parent) + [node.state]
 
     def search(self):
+        visited = []
 
         while self.open_nodes:
-            node = self.open_nodes[0]
+            self.problem.domain.node = self.open_nodes[0]
             self.open_nodes[0:1] = []
-            path = self.get_path(node)
-
-            if self.problem.initial not in path:
-                continue
-
-            self.problem.domain.node = node
 
             if self.problem.goal_test(self.problem.domain.node.state):
-                print("\n #*#*# ENCONTRAMOS O CAMINHO \n")
                 return self.result
 
-            if self.problem.domain.node.state in self.visited:
+            if self.problem.domain.node.state in visited:
                 continue
 
-            self.visited += [self.problem.domain.node.state]
+            visited += [self.problem.domain.node.state]
             lnewnodes = []
 
             list_actions = self.problem.domain.actions(self.problem.domain.node.state)
@@ -361,7 +309,7 @@ class SearchTree:
                 list_actions = self.problem.domain.actions_survive(self.problem.domain.node.state)
 
             for newstate in list_actions:
-                if newstate not in path:
+                if newstate not in self.get_path(self.problem.domain.node):
                     heuristic = self.problem.domain.heuristic(newstate, self.problem.goal)
                     lnewnodes += [SearchNode(newstate, self.problem.domain.node, heuristic)]
 
