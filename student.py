@@ -1,5 +1,6 @@
 from snake import Snake
 import signal
+from math import sqrt
 __author__ = "Daniela Simões, 76771 & Cristiana Carvalho, 77682"
 
 
@@ -14,6 +15,20 @@ def sub(a, b):
 class NoTimeException(BaseException):
     def __init__(self, message):
         self.message = message
+
+
+class FoodPosArea:
+
+    def __init__(self, food_pos):
+        self.limit = 5
+        self.x_minus = food_pos[0]-self.limit
+        self.x_plus = food_pos[0]+self.limit
+        self.y_minus = food_pos[1]-self.limit
+        self.y_plus = food_pos[1]+self.limit
+        self.area_center = food_pos
+
+    def valid(self, food_pos):
+        return self.x_minus <= food_pos[0] <= self.x_plus and self.y_minus <= food_pos[1] <= self.y_plus
 
 
 class Student(Snake):
@@ -42,6 +57,8 @@ class Student(Snake):
         self.head_collision = None
         # path result
         self.result = []
+        # area food pos
+        self.food_area = None
         super().__init__(body, direction, name=name)
 
     def signal_handler(self, signum, frame):
@@ -88,6 +105,7 @@ class Student(Snake):
         try:
             self.visited_cells = set()
             initial = self.head_position
+            target = self.maze.foodpos
 
             # we will try to use the previous path
             # if the resulthas the initial point and the goal point
@@ -107,14 +125,38 @@ class Student(Snake):
                     initial = tmp[-1]
                     print(self.name, "reaproveitei")
 
-            problem = SearchProblem(self, initial, self.maze.foodpos)
+            elif initial in self.result:
+                # verify if is in food pos
+
+                if self.food_area is not None and self.food_area.valid(self.maze.foodpos):
+                    # yes is in food pos
+                    tmp = []
+
+                    for cell in self.result[self.result.index(self.head_position)+1:]:
+                        if self.is_not_player_pos(cell) and self.head_collision_avoidance(cell):
+                            tmp += [cell]
+                        else:
+                            break
+
+                    if len(tmp) != 0:
+                        previous_search = [self.head_position] + tmp[:-1]
+                        initial = tmp[-1]
+                        # target = self.food_area.area_center
+                        print(self.name, "reaproveitei food area")
+                else:
+                    print(self.name, "\n\n\n## NEW FOOD AREA\n\n\n")
+                    self.food_area = FoodPosArea(self.maze.foodpos)
+
+            problem = SearchProblem(self, initial, target)
             tree_search = SearchTree(problem)
             tree_search.search()
             signal.alarm(0)
         except NoTimeException as e:
             pass
 
-        self.result = previous_search + tree_search.get_path(self.node)
+        if tree_search is not None:
+            self.result = previous_search + tree_search.get_path(self.node)
+            print(len(self.result))
 
         if len(self.result) >= 2:
             self.direction = sub(self.result[1], self.head_position)
@@ -211,7 +253,9 @@ class Student(Snake):
         return cell not in self.head_collision
 
     def distance(self, state, goal_state):
-        return ((state[0] - goal_state[0]) ** 2 + (state[1] - goal_state[1]) ** 2) ** 0.5
+        (x1, y1) = state
+        (x2, y2) = goal_state
+        return sqrt((x1-x2)**2 + (y1-y2)**2)
 
     def heuristic(self, state, goal_state):
         distances = list()
@@ -292,6 +336,7 @@ class SearchTree:
             self.open_nodes[0:1] = []
 
             if self.problem.goal_test(self.problem.domain.node.state):
+                print("\n #*#*# ENCONTRAMOS O CAMINHO \n")
                 return self.result
 
             if self.problem.domain.node.state in visited:
