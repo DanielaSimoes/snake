@@ -2,6 +2,7 @@ import numpy as np
 import itertools
 import scipy.spatial.distance as d
 import time
+from math import sqrt
 
 
 def add(a, b):
@@ -10,13 +11,6 @@ def add(a, b):
 
 def sub(a, b):
     return a[0] - b[0], a[1] - b[1]
-
-
-def get_path(node):
-    if node.parent is None:
-        return [node.state]
-
-    return get_path(node.parent) + [node.state]
 
 
 class AgentBrain:
@@ -35,6 +29,7 @@ class AgentBrain:
         self.winning_points = winning_points
         self.other_head_position = (0, 0)
         self.execution_time = 0
+        self.last_execution_time = 0
 
         self.x_size = map_size[0]
         self.y_size = map_size[1]
@@ -94,7 +89,10 @@ class AgentBrain:
 
     def heuristic(self, state, goal_state):
         # return self.distance[self.to_index(goal_state), self.to_index(state)]
-        return int( ((state[0]-goal_state[0])**2 + (state[1]-goal_state[1])**2 )**0.5)
+        """
+        (x1,y1) = state
+        (x2,y2) = goal_state
+        return sqrt( (x1-x2)**2 + (y1-y2)**2 )
         """
         if (state, goal_state) in self.heuristic_distances:
             return self.heuristic_distances[(state, goal_state)]
@@ -147,7 +145,7 @@ class AgentBrain:
 
             self.heuristic_distances[(state, goal_state)] = min(distances)
             return self.heuristic_distances[(state, goal_state)]
-        """
+
     def to_index(self, point):
         return point[0] * self.y_size + point[1]
 
@@ -170,18 +168,18 @@ class AgentBrain:
         return state == self.goal
 
     def time(self, point):
+        self.last_execution_time = self.execution_time
         self.execution_time += (time.time() - self.start) * 1000
         self.start = time.time()
 
-        if self.execution_time >= self.agent_time * 0.90:
-            print(self.name, point, self.execution_time)
+        if self.execution_time >= self.agent_time * 0.80:
             return True
         return False
 
     def verify(self):
         self.execution_time += (time.time() - self.start) * 1000
         if self.execution_time >= self.agent_time:
-            raise Exception(self.execution_time)
+            raise Exception(self.execution_time, self.last_execution_time)
         self.start = time.time()
 
     def search_helper(self):
@@ -191,6 +189,8 @@ class AgentBrain:
         # iteration = 0
 
         while self.open_nodes:
+            self.get_path(self.node)
+
             if self.time("1"):
                 return
 
@@ -215,7 +215,7 @@ class AgentBrain:
                 if self.time("2"):
                     return
 
-                if newstate not in self.result:
+                if newstate not in self.get_path(self.node):
                     if self.time("3"):
                         return
                     heuristic = self.heuristic(newstate, self.goal)
@@ -226,6 +226,22 @@ class AgentBrain:
             if self.time("5"):
                 return
             self.add_to_open(lnewnodes)
+
+    def get_path(self, node):
+        if self.time("125"):
+            return self.result
+
+        path = []
+
+        while node.parent is not None:
+            path = [node.state] + path
+            node = node.parent
+
+            if self.time("126"):
+                return self.result
+
+        self.result = [node.state] + path
+        return self.result
 
     def get_direction(self, maze, body, from_point, to):
         # print(self.agent_time)
@@ -264,6 +280,7 @@ class AgentBrain:
         """
 
         self.visited = []
+        previous_search = []
 
         # if initial in self.result:
         #     aval = sub(self.result[-1], goal)
@@ -281,18 +298,11 @@ class AgentBrain:
                 else:
                     break
 
-            if len(tmp) == 0:
-                self.result = []
-                self.initial = self.initial
-            else:
-                self.result = [self.initial] + tmp[:-1]
+            if len(tmp) != 0:
+                previous_search = [self.initial] + tmp[:-1]
                 self.initial = tmp[-1]
 
 #           print("self.result antes: ", tmp, self.result, self.initial)
-        else:
-            # reset
-            self.result = []
-            # reset
 
         root = SearchNode(self.initial, None, self.heuristic(self.initial, self.goal))
         self.open_nodes = [root]
@@ -303,7 +313,7 @@ class AgentBrain:
         self.search_helper()
         self.verify()
 
-        self.result += get_path(self.node)
+        self.result = previous_search + self.result
 
 #       print(self.result)
 
