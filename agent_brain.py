@@ -93,6 +93,9 @@ class AgentBrain:
         return actlist
 
     def heuristic(self, state, goal_state):
+        # return self.distance[self.to_index(goal_state), self.to_index(state)]
+        return int( ((state[0]-goal_state[0])**2 + (state[1]-goal_state[1])**2 )**0.5)
+        """
         if (state, goal_state) in self.heuristic_distances:
             return self.heuristic_distances[(state, goal_state)]
         elif (goal_state, state) in self.heuristic_distances:
@@ -144,7 +147,7 @@ class AgentBrain:
 
             self.heuristic_distances[(state, goal_state)] = min(distances)
             return self.heuristic_distances[(state, goal_state)]
-
+        """
     def to_index(self, point):
         return point[0] * self.y_size + point[1]
 
@@ -170,8 +173,8 @@ class AgentBrain:
         self.execution_time += (time.time() - self.start) * 1000
         self.start = time.time()
 
-        print(self.name, point, self.execution_time)
-        if self.execution_time >= self.agent_time * 0.80:
+        if self.execution_time >= self.agent_time * 0.90:
+            print(self.name, point, self.execution_time)
             return True
         return False
 
