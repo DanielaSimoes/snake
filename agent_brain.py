@@ -215,7 +215,7 @@ class AgentBrain:
             self.add_to_open(lnewnodes)
 
         end = time.time()
-        print(self.name, int(round((end - self.start) * 1000)))
+        #print(self.name, int(round((end - self.start) * 1000)))
         signal.alarm(0)
 
     def signal_handler(self, signum, frame):

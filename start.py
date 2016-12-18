@@ -1,6 +1,7 @@
 from game import *
 from agent1 import Agent1
 from maze import Maze
+from student import Student
 import importlib
 import asyncio
 import websockets
@@ -16,8 +17,8 @@ def main(argv):
     agentproxy = False
     url = 'ws://localhost:8765' 
     url = None
-    StudentAgent = Agent1
-    studentAgent_name = "Agent1"
+    StudentAgent = Student
+    studentAgent_name = "DC"
     student_url = None
     OponentAgent = Agent1
     oponentAgent_name = "Agent1"
