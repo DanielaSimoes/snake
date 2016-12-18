@@ -13,6 +13,7 @@ from maze import Maze
 from netagent import NetAgent
 
 import logging
+import traceback
 
 class Player:
     def __init__(self, agent, color=(255,0,0)):
@@ -189,6 +190,7 @@ class SnakeGame:
                 b = lambda x: x.agent.update(points=[(a.name, a.points) for a in self.players], mapsize=(self.hortiles, self.verttiles), count=self.count, agent_time=1000*(1/self.fps)/2) #update game logic (only for alive players)
                 self.timekeep(player, b)
             except Exception as error:
+                traceback.print_exc()
                 logging.error(str(error))
                 player.kill()
 
@@ -251,6 +253,7 @@ class SnakeGame:
         try:
             snake.agent.updateBody(copy.deepcopy(snake.body))
         except Exception as error:
+            traceback.print_exc()
             logging.error(str(error))
             snake.kill()
         return r
@@ -291,6 +294,7 @@ class SnakeGame:
                     b = lambda x: x.agent.updateDirection(maze)
                     self.timekeep(player, b)
                 except Exception as error:
+                    traceback.print_exc()
                     logging.error(str(error))
                     player.kill()
             #this variable makes sure both snakes can eat the same food at the same turn 
@@ -324,6 +328,7 @@ class SnakeGame:
             try:
                 p.agent.destroy()
             except Exception as error:
+                traceback.print_exc()
                 logging.error(str(error))
 
         while self.screen != None:
