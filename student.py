@@ -107,9 +107,6 @@ class Student(Snake):
             self.direction = self.direction[0], -int(self.y_size * 1.0 / (self.direction[1]))
 
     def actions(self, cell):
-        if cell in self.visited_cells:
-            print("NAO DEVIA ACONTECER 2")
-
         self.visited_cells.add(cell)
         actlist = []
 
@@ -137,6 +134,36 @@ class Student(Snake):
                 actlist += [action]
 
         return actlist
+
+    def actions_survive(self, cell):
+        self.visited_cells.add(cell)
+        actlist = []
+
+        options = [(cell[0], cell[1] + self.dist_to_walk), (cell[0], cell[1] - self.dist_to_walk),
+                   (cell[0] + self.dist_to_walk, cell[1]), (cell[0] - self.dist_to_walk, cell[1])]
+
+        for option in options:
+            if option[0] < 0:
+                # if the agent_brain does not continue to the left, snake returns from the right side
+                action = (option[0] + self.x_size, option[1])
+            elif option[1] < 0:
+                # if the agent_brain does not continue to the top, snake returns from the bottom side
+                action = (option[0], option[1] + self.y_size)
+            elif option[0] >= self.x_size:
+                # if the agent_brain does not continue to the right, snake returns from the left side
+                action = (option[0] % self.x_size, option[1])
+            elif option[1] >= self.y_size:
+                # if the agent_brain does not continue to the right, snake returns from the left side
+                action = (option[0], option[1] % self.y_size)
+            else:
+                action = option
+
+            if action not in self.visited_cells and self.is_not_obstacle(action) \
+                    and self.head_collision_avoidance(action):
+                actlist += [action]
+
+        return actlist
+
 
     def is_not_obstacle(self, cell):
         return cell not in self.maze.obstacles
@@ -237,7 +264,12 @@ class SearchTree:
             visited += [self.problem.domain.node.state]
             lnewnodes = []
 
-            for newstate in self.problem.domain.actions(self.problem.domain.node.state):
+            list_actions = self.problem.domain.actions(self.problem.domain.node.state)
+
+            if len(list_actions) == 0 and len(self.open_nodes) == 0:
+                list_actions = self.problem.domain.actions_survive(self.problem.domain.node.state)
+
+            for newstate in list_actions:
                 if newstate not in self.get_path(self.problem.domain.node):
                     heuristic = self.problem.domain.heuristic(newstate, self.problem.goal)
                     lnewnodes += [SearchNode(newstate, self.problem.domain.node, heuristic)]
