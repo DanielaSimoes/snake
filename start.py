@@ -1,6 +1,5 @@
 from game import *
 from agent1 import Agent1
-from student import Student
 from maze import Maze
 import importlib
 import asyncio
@@ -14,31 +13,31 @@ import sys, getopt
 def main(argv):
     inputfile = None
     visual = True
-    network = False
+    agentproxy = False
     url = 'ws://localhost:8765' 
     url = None
-    StudentAgent = Student
-    studentAgent_name = "DC"
+    StudentAgent = Agent1
+    studentAgent_name = "Agent1"
     student_url = None
-    OponentAgent = Student
-    oponentAgent_name = "Mirror"
+    OponentAgent = Agent1
+    oponentAgent_name = "Agent1"
     oponent_url = None
     try:
-        opts, args = getopt.getopt(argv,"hm:s:o:p",["help","agent_brain=","disable-video","student-agent=","oponent-agent=","proxy"])
+        opts, args = getopt.getopt(argv,"hm:s:o:p",["help","map=","disable-video","student-agent=","oponent-agent=","proxy"])
     except getopt.GetoptError as e:
         print(e)
-        print('start.py [-h/--help -m/--agent_brain <mapfile> --disable-video -p/--proxy -s/--student-agent AgentName,Name[,websocket] -o/--oponent-name AgentName,Name[,websocket]]')
+        print('start.py [-h/--help -m/--map <mapfile> --disable-video -p/--proxy -s/--student-agent AgentName,Name[,websocket] -o/--oponent-name AgentName,Name[,websocket]]')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('start.py [-h/--help -m/--agent_brain <mapfile> --disable-video -p/--proxy -s/--student-agent AgentName,Name[,websocket] -o/--oponent-name AgentName,Name[,websocket]]')
+            print('start.py [-h/--help -m/--map <mapfile> --disable-video -p/--proxy -s/--student-agent AgentName,Name[,websocket] -o/--oponent-name AgentName,Name[,websocket]]')
             sys.exit()
-        elif opt in ("-m", "--agent_brain"):
+        elif opt in ("-m", "--map"):
             inputfile = arg
         elif opt in ("--disable-video"):
             visual = False 
         elif opt in ("-p", "--proxy"):
-            network = True
+            agentproxy = True
         elif opt in ("-s", "--student-agent"):
             a = arg.split(',')
             classmodule = importlib.import_module(a[0].lower())
@@ -55,8 +54,8 @@ def main(argv):
             oponentAgent_name = a[1]
             if len(a) > 2:
                 oponent_url = a[2]
-                
-    if network:
+
+    if agentproxy:
         if student_url == None:
             print("Must specify --student-agent Agent,name,websocket")
             sys.exit(1)
@@ -64,16 +63,17 @@ def main(argv):
         asyncio.get_event_loop().run_until_complete(proxy(student_url,StudentAgent, studentAgent_name))
     else:
         try:
-            snake=SnakeGame(hor=60, ver=40, fps=20, visual=visual, obstacles=15, mapa=inputfile)
-            snake.setPlayers([  
-                StudentAgent([snake.playerPos()], name=studentAgent_name) if student_url == None else StudentAgent([snake.playerPos()], name=studentAgent_name, url=student_url),
-                OponentAgent([snake.playerPos()], name=oponentAgent_name) if oponent_url == None else OponentAgent([snake.playerPos()], name=oponentAgent_name, url=oponent_url),
+            game=SnakeGame(hor=60, ver=40, fps=20, visual=visual, obstacles=15, mapa=inputfile)
+            print("Launching game <{}>".format(game.gameid))
+            game.setPlayers([  
+                StudentAgent([game.playerPos()], name=studentAgent_name) if student_url == None else StudentAgent([game.playerPos()], name=studentAgent_name, url=student_url,gameid=game.gameid),
+                OponentAgent([game.playerPos()], name=oponentAgent_name) if oponent_url == None else OponentAgent([game.playerPos()], name=oponentAgent_name, url=oponent_url,gameid=game.gameid),
             ])
         except Exception as e:
             print(e)
             sys.exit(1)
         
-        snake.start()
+        game.start()
 
 async def proxy(url, StudentAgent, agent_name):
     async with websockets.connect(url) as websocket:
@@ -92,6 +92,10 @@ async def proxy(url, StudentAgent, agent_name):
             msg = json.loads(m)
             if msg['cmd'] == 'ping':
                 await websocket.send(json.dumps({}))
+            elif msg['cmd'] == 'destroy':
+                logging.info("GAME OVER")
+                websocket.close()
+                return
             elif msg['cmd'] == 'updateBody':
                 agent.updateBody([(b[0], b[1]) for b in msg['body']])
             elif msg['cmd'] == 'update':
