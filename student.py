@@ -160,6 +160,7 @@ class StudentPlayer(Snake):
                 # initial do caminho encontrado
 
                 teleport = True
+                self.tree_search.problem.domain = self
                 preservar_food_area = self.tree_search.search()
                 # provavelmente iremos ter teleport, portanto necessário ajuste !!!!
                 print(self.name, "TELEPORT")
@@ -290,6 +291,10 @@ class StudentPlayer(Snake):
                     pass
             else:
                 self.result = self.result[self.result.index(self.head_position):]
+
+                if len(self.result) == 1:
+                    problem = SearchProblem(self, self.head_position, target)
+                    self.tree_search = SearchTree(problem)
 
         print(self.name, get_result, self.head_position, self.result)
 
