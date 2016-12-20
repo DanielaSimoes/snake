@@ -68,6 +68,10 @@ class StudentPlayer(Snake):
         self.food_area = None
         # tree search
         self.tree_search = None
+        # obstacles processed
+        self.obstacles_processed = False
+        # obstacles
+        self.obstacles = []
         super().__init__(body, direction, name=name)
 
     def signal_handler(self, signum, frame):
@@ -93,6 +97,42 @@ class StudentPlayer(Snake):
     def updateDirection(self, maze):
         self.head_position = self.body[0]
         self.maze = maze
+        self.obstacles = self.maze.obstacles
+
+        if not self.obstacles_processed:
+            signal.signal(signal.SIGALRM, self.signal_handler)
+            search_time = (self.agent_time / 1000) * (3 / 20)  # 15/20 = 75% # 17/20 = 85%
+            signal.setitimer(signal.ITIMER_REAL, search_time)
+
+            try:
+                tmp = []
+                for obstacle in self.maze.obstacles:
+                    tmp += [obstacle]
+
+                    if (tmp[0], tmp[1]+1) in self.maze.obstacles and \
+                        (tmp[0], tmp[1]-1) in self.maze.obstacles and \
+                            (tmp[0]-1, tmp[1]-1) in self.maze.obstacles and \
+                                (tmp[0]-1, tmp[1]+1) in self.maze.obstacles:
+                        pass
+                    elif (tmp[0], tmp[1]+1) in self.maze.obstacles and \
+                        (tmp[0], tmp[1]-1) in self.maze.obstacles and \
+                            (tmp[0]-1, tmp[1]-1) in self.maze.obstacles and \
+                                (tmp[0]-1, tmp[1]+1) in self.maze.obstacles:
+                        pass
+                    elif (tmp[0], tmp[1]+1) in self.maze.obstacles and \
+                        (tmp[0], tmp[1]-1) in self.maze.obstacles and \
+                            (tmp[0]-1, tmp[1]-1) in self.maze.obstacles and \
+                                (tmp[0]-1, tmp[1]+1) in self.maze.obstacles:
+                        pass
+                    elif (tmp[0], tmp[1]+1) in self.maze.obstacles and \
+                        (tmp[0], tmp[1]-1) in self.maze.obstacles and \
+                            (tmp[0]-1, tmp[1]-1) in self.maze.obstacles and \
+                                (tmp[0]-1, tmp[1]+1) in self.maze.obstacles:
+                        pass
+
+                self.obstacles_processed = True
+            except NoTimeException as e:
+                pass
 
         self.other_head_position = maze.playerpos[0] if self.body[0] != maze.playerpos[0] \
             else maze.playerpos[len(self.body)]
@@ -397,7 +437,7 @@ class StudentPlayer(Snake):
         return actlist
 
     def is_not_obstacle(self, cell):
-        return cell not in self.maze.obstacles
+        return cell not in self.obstacles
 
     def is_not_player_pos(self, cell):
         return cell not in self.maze.playerpos
