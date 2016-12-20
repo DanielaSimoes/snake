@@ -1,6 +1,5 @@
 from snake import Snake
 import signal
-from math import sqrt
 __author__ = "Daniela Simões, 76771 & Cristiana Carvalho, 77682"
 
 
@@ -106,7 +105,7 @@ class Student(Snake):
                 if len(tmp) != 0:
                     previous_search = [self.head_position] + tmp[:-1]
                     initial = tmp[-1]
-                    print(self.name, "reaproveitei")
+                    # print(self.name, "reaproveitei")
 
             problem = SearchProblem(self, initial, self.maze.foodpos)
             tree_search = SearchTree(problem)
@@ -212,9 +211,10 @@ class Student(Snake):
         return cell not in self.head_collision
 
     def distance(self, state, goal_state):
-        (x1, y1) = state
-        (x2, y2) = goal_state
-        return sqrt((x1-x2)**2 + (y1-y2)**2)
+        # https://en.wikipedia.org/wiki/Taxicab_geometry
+        (startx, starty) = state
+        (endx, endy) = goal_state
+        return abs(endx-startx) + abs(endy-starty)
 
     def heuristic(self, state, goal_state):
         distances = list()
@@ -268,17 +268,20 @@ class SearchProblem:
 
 
 class SearchNode:
-    def __init__(self, state, parent, h):
+    def __init__(self, state, parent, c, h, f):
         self.state = state
         self.parent = parent
+        self.c = c
         self.h = h
+        self.f = f
 
 
 class SearchTree:
     def __init__(self, problem):
         self.problem = problem
-        self.open_nodes = [SearchNode(problem.initial, None,
-                                      self.problem.domain.heuristic(self.problem.initial, self.problem.goal))]
+        root = SearchNode(problem.initial, None, 0, self.problem.domain.heuristic(self.problem.initial, self.problem.goal), None)
+        root.f = root.c + root.h
+        self.open_nodes = [root]
         self.result = []
 
     def get_path(self, node):
@@ -310,8 +313,10 @@ class SearchTree:
 
             for newstate in list_actions:
                 if newstate not in self.get_path(self.problem.domain.node):
+                    cost = 1
                     heuristic = self.problem.domain.heuristic(newstate, self.problem.goal)
-                    lnewnodes += [SearchNode(newstate, self.problem.domain.node, heuristic)]
+                    lnewnodes += [SearchNode(newstate, self.problem.domain.node, self.problem.domain.node.c + cost,
+                                             heuristic, self.problem.domain.node.c + cost + heuristic)]
 
             self.add_to_open(lnewnodes)
 
@@ -319,4 +324,4 @@ class SearchTree:
 
     def add_to_open(self, lnewnodes):
         self.open_nodes.extend(lnewnodes)
-        self.open_nodes.sort(key=lambda e: e.h)
+        self.open_nodes.sort(key=lambda e: e.f)
